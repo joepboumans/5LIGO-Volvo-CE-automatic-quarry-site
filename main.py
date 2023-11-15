@@ -30,6 +30,16 @@ def read_config(file='config.txt'):
     return nHaulers, nLP, nULP, nSO, nCS, init_haulers, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy
     
 def read_mission(file='mission.txt'):
-    pass
+    with open(file, 'r') as f:
+        lines = f.readlines()
+        # Read the mission
+        missions = []
+        for line in lines:
+            print(line)
+            mission = re.findall(r'(\w\d)', line)
+            missions += [mission]
+    return missions
 
-read_config()
+nHaulers, nLP, nULP, nSO, nCS, init_haulers, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
+missions = read_mission()
+
