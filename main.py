@@ -52,18 +52,10 @@ def read_mission(file='mission.txt'):
     return missions
 
 
-if __name__ == "__main__":
-    nHaulers, nLP, nULP, nSO, nCS, init_haulers, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
-    missions = read_mission()
-    
-    # Create adjecency matrix
-    grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
-    distance = np.zeros((GRID_SIZE, GRID_SIZE))
-    
-    # Add SO
-    for so in SO_positions:
-        grid_map[so[0]-1, so[1]-1] = WALL
-        distance[so[0]-1, so[1]-1] = WALL
+def bfs(start, end, grid_map, distance):
+    # Unpack start and end
+    start_x, start_y = start
+    end_x, end_y = end
     
     # BFS
     visited = np.full((GRID_SIZE, GRID_SIZE), False)
@@ -71,12 +63,14 @@ if __name__ == "__main__":
     bfs = []
     
     # Start from Hauler position
-    queue.append((init_haulers[0][0]-1, init_haulers[0][1]-1))
-    visited[init_haulers[0][0]-1, (init_haulers[0][1]-1)] = True
+    queue.append((start_x-1, start_y-1))
+    visited[start_x-1, (start_y-1)] = True
     
     while queue:
         s = queue.pop(0)
         bfs.append(s)
+        if s == (end_x-1, end_y-1):
+            break
         x, y = s
         if x > 0 and grid_map[x-1, y] != WALL and not visited[x-1,y]:
             queue.append((x-1, y))
@@ -94,6 +88,25 @@ if __name__ == "__main__":
             queue.append((x, y+1))
             visited[x,y+1] = True
             distance[x,y+1] = distance[x,y] + 1
+            
+    return distance
+
+if __name__ == "__main__":
+    nHaulers, nLP, nULP, nSO, nCS, init_haulers, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
+    missions = read_mission()
+    print(missions)
+    # Create adjecency matrix
+    grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
+    distance = np.zeros((GRID_SIZE, GRID_SIZE))
+    
+    # Add SO
+    for so in SO_positions:
+        grid_map[so[0]-1, so[1]-1] = WALL
+        distance[so[0]-1, so[1]-1] = WALL
+    
+    for mission in missions:
+        for next_pos in mission:
+            bfs(init_haulers[0], LP_positions[int(next_pos[1])-1], grid_map, distance)
     
     print(distance)
     print(grid_map)
