@@ -2,6 +2,7 @@ import re
 import numpy as np
 
 GRID_SIZE = 12
+WALL = -1
 
 def check_for_match(match):
     if match:
@@ -57,38 +58,42 @@ if __name__ == "__main__":
     
     # Create adjecency matrix
     grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
+    distance = np.zeros((GRID_SIZE, GRID_SIZE))
     
     # Add SO
     for so in SO_positions:
-        grid_map[so[0]-1, so[1]-1] = 666
+        grid_map[so[0]-1, so[1]-1] = WALL
+        distance[so[0]-1, so[1]-1] = WALL
     
     # BFS
-    visited = [False] * (GRID_SIZE * GRID_SIZE)
+    visited = np.full((GRID_SIZE, GRID_SIZE), False)
     queue = []
     bfs = []
+    
     # Start from Hauler position
     queue.append((init_haulers[0][0]-1, init_haulers[0][1]-1))
-    visited[init_haulers[0][0]-1 + (init_haulers[0][1]-1)*GRID_SIZE] = True
+    visited[init_haulers[0][0]-1, (init_haulers[0][1]-1)] = True
     
     while queue:
         s = queue.pop(0)
-        # print(s, end=" ")
         bfs.append(s)
         x, y = s
-        if x > 0 and grid_map[x-1, y] != 666 and not visited[x-1 + y*GRID_SIZE]:
+        if x > 0 and grid_map[x-1, y] != WALL and not visited[x-1,y]:
             queue.append((x-1, y))
-            visited[x-1 + y*GRID_SIZE] = True
-        if x < GRID_SIZE-1 and grid_map[x+1, y] != 666 and not visited[x+1 + y*GRID_SIZE]:
+            visited[x-1,y] = True
+            distance[x-1,y] = distance[x,y] + 1
+        if x < GRID_SIZE-1 and grid_map[x+1, y] != WALL and not visited[x+1,y]:
             queue.append((x+1, y))
-            visited[x+1 + y*GRID_SIZE] = True
-        if y > 0 and grid_map[x, y-1] != 666 and not visited[x + (y-1)*GRID_SIZE]:
+            visited[x+1,y] = True
+            distance[x+1,y] = distance[x,y] + 1
+        if y > 0 and grid_map[x, y-1] != WALL and not visited[x,y-1]:
             queue.append((x, y-1))
-            visited[x + (y-1)*GRID_SIZE] = True
-        if y < GRID_SIZE-1 and grid_map[x, y+1] != 666 and not visited[x + (y+1)*GRID_SIZE]:
+            visited[x,y-1] = True
+            distance[x,y-1] = distance[x,y] + 1
+        if y < GRID_SIZE-1 and grid_map[x, y+1] != WALL and not visited[x,y+1]:
             queue.append((x, y+1))
-            visited[x + (y+1)*GRID_SIZE] = True
+            visited[x,y+1] = True
+            distance[x,y+1] = distance[x,y] + 1
     
-        
-    print(bfs)
-    # print(grid_map)
-    
+    print(distance)
+    print(grid_map)
