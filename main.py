@@ -128,16 +128,15 @@ def mission_to_coords(mission, hauler, hauler_positions, LP_positions, ULP_posit
 
 if __name__ == "__main__":
     nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
-    missions = read_mission()
     
+    missions = read_mission()
     missions_pos = [[] for i in range(len(missions))]
     
     # Convert mission to coordinates
     for hauler_id, mission in enumerate(missions):
         mission_pos = [[] for i in range(len(mission))]
         for i, pos in enumerate(mission):
-            char = pos[0]
-            match char:
+            match pos[0]:
                 case 'L':
                     mission_pos[i] = LP_positions[int(pos[1])-1]
                 case 'U':
@@ -150,11 +149,10 @@ if __name__ == "__main__":
                     print("Error: Mission not found")
                     
         missions_pos[hauler_id] = mission_pos
-        
     
-    print(f"{missions} {missions_pos}")
+    print(f"{missions=} {missions_pos=}")
     
-    # Create adjecency matrix
+    # Create map and distance, pred for path finding
     grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
     distance = np.zeros((GRID_SIZE, GRID_SIZE))
     pred = {}
@@ -164,25 +162,28 @@ if __name__ == "__main__":
         grid_map[so[0], so[1]] = WALL
         distance[so[0], so[1]] = WALL
     
+    # Start path finding
     paths = []
-    print(f"{hauler_positions[0]} {LP_positions[3]}")
-    
-    start_pos = hauler_positions[0]
-    for mission in missions:
+    for hauler_id, mission in enumerate(missions_pos):
+        start_pos = hauler_positions[hauler_id]
+        # Loop over the mission positions
         for next_pos in mission:
-            pos = LP_positions[int(next_pos[1])-1]
-            x, y = pos
-            
             # Use BFS to map the distance
-            bfs(hauler_positions[0], pos, grid_map, distance, pred)
-            
+            bfs(start_pos, next_pos, grid_map, distance, pred)
             # Find the path
             path =[]
-            find_path(hauler_positions[0], pos, path, pred)
-            break
+            path = find_path(start_pos, next_pos, path, pred)
+            # Add path to paths and update start_pos
+            start_pos = next_pos
+            paths.append(path)
     
-    print(path)
+    print(paths)
     
+    for nPath, path in enumerate(paths):
+        for pos in path:
+            x, y = pos
+            grid_map[x,y] = nPath+1
+            
     for pos in path:
         x, y = pos
         distance[x,y] = 10
@@ -191,5 +192,5 @@ if __name__ == "__main__":
     # print(grid_map)
     
     plt.figure(figsize=(10,10))
-    plt.imshow(distance, cmap='hot', interpolation='nearest')
+    plt.imshow(grid_map, cmap='hot', interpolation='nearest')
     plt.show()
