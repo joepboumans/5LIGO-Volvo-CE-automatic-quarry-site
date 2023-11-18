@@ -122,10 +122,6 @@ def find_path(start_pos, end_pos, path, pred):
     
     return path
 
-def mission_to_coords(mission, hauler, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions):
-    
-    pass
-
 if __name__ == "__main__":
     nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
     
