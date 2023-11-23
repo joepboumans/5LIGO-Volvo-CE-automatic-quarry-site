@@ -133,7 +133,7 @@ def astar(start, end, grid_map, distance, pred):
             x, y = node
             # Get G cost
             cost = distance[x,y]
-            # Get H cost
+            # Get H cost (Manhattan distance)
             cost += abs(end_x - x) + abs(end_y - y)
             # Check if cost is lower than min_cost
             if cost < min_cost:
@@ -150,22 +150,30 @@ def astar(start, end, grid_map, distance, pred):
         
         # Check the neighbors
         x, y = current
-        if x > 0 and grid_map[x-1, y] != WALL and not (x-1, y) in closedQueue:
-            openQueue.append((x-1, y))
-            distance[x-1,y] = distance[x,y] + 1
-            pred[x-1,y] = current
-        if x < GRID_SIZE-1 and grid_map[x+1, y] != WALL and not (x+1, y) in closedQueue:
-            openQueue.append((x+1, y))
-            distance[x+1,y] = distance[x,y] + 1
-            pred[x+1,y] = current
-        if y > 0 and grid_map[x, y-1] != WALL and not (x, y-1) in closedQueue:
-            openQueue.append((x, y-1))
-            distance[x,y-1] = distance[x,y] + 1
-            pred[x,y-1] = current
-        if y < GRID_SIZE-1 and grid_map[x, y+1] != WALL and not (x, y+1) in closedQueue:
-            openQueue.append((x, y+1))
-            distance[x,y+1] = distance[x,y] + 1
-            pred[x,y+1] = current
+        for neighbor in [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]:
+            # Check if neighbor is in closed queue, otherwise skip
+            if neighbor in closedQueue:
+                continue
+            
+            # Check ranges
+            x, y = neighbor
+            if x < 0 or x > GRID_SIZE-1 or y < 0 or y > GRID_SIZE-1:
+                continue
+            
+            # Check if neighbor is a wall
+            if grid_map[x,y] == WALL:
+                continue
+            
+            if not neighbor in openQueue:
+                openQueue.append(neighbor)
+                distance[x,y] = distance[current] + 1
+                pred[x,y] = current
+            else:
+                # Check if the new path is shorter
+                if distance[current] + 1 < distance[x,y]:
+                    distance[x,y] = distance[current] + 1
+                    pred[x,y] = current
+                    
             
     return distance
 
