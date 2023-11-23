@@ -1,10 +1,11 @@
 import re
+import time
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import colors
 from matplotlib import animation
 
-GRID_SIZE = 18
+GRID_SIZE = 12
 WALL = -1
 
 def check_for_match(match):
@@ -61,8 +62,18 @@ def read_mission(file='mission.txt'):
             missions += [mission]
     return missions
 
+def write_output(makespan, completion_times, execution_time, paths, file='output.txt'):
+    with open(file, 'w') as f:
+        f.write("//Quantitative values\n")
+        f.write(f'{makespan} \t//Makespan\n')
+        for i, completion_time in enumerate(completion_times):
+            f.write(f'{completion_time}\t//Mission completion time hauler{i+1}\n')
+        f.write(f'{execution_time}\t//Application execution time (in millisecond)\n')
+        f.write("//Path to the final destination\n")
+        for path in paths:
+            f.write(f'{path}\n')
 
-def bfs(start, end, grid_map, distance, pred, distance_plt):
+def bfs(start, end, grid_map, distance, pred):
     # Unpack start and end
     start_x, start_y = start
     end_x, end_y = end
@@ -107,10 +118,6 @@ def bfs(start, end, grid_map, distance, pred, distance_plt):
             distance[x,y+1] = distance[x,y] + 1
             pred[x,y+1] = s
         
-        # After each find plot the distance
-        distance_plt.imshow(distance, cmap='hot', interpolation='nearest')
-        plt.pause(0.025)
-        
     return distance
 
 def astar(start, end, grid_map, distance, pred):
@@ -130,12 +137,16 @@ def astar(start, end, grid_map, distance, pred):
             x, y = node
             # Get G cost
             cost = distance[x,y]
-            # Get H cost (Manhattan distance)
+            # Get H cost (Manhattan distance) 
             cost += abs(end_x - x) + abs(end_y - y)
+            # Get H cost (Euclidean distance)
+            cost += np.sqrt((end_x - x)**2 + (end_y - y)**2)
+            
             # Check if cost is lower than min_cost
             if cost < min_cost:
                 min_cost = cost
                 current = node
+        
         # Remove the node from the open queue
         openQueue.remove(current)
         # Add the node to the closed queue
@@ -189,8 +200,8 @@ def find_path(start_pos, end_pos, path, pred):
     return path
 
 if __name__ == "__main__":
+    # Read configuration files
     nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
-    
     missions = read_mission()
     missions_pos = [[] for i in range(len(missions))]
     
@@ -212,8 +223,6 @@ if __name__ == "__main__":
                     
         missions_pos[hauler_id] = mission_pos
     
-    print(f"{missions=} {missions_pos=}")
-    
     # Create map and distance, pred for path finding
     grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
     distance = np.zeros((GRID_SIZE, GRID_SIZE))
@@ -227,21 +236,20 @@ if __name__ == "__main__":
     # Reset distance after each found point
     clean_distance = distance.copy()
     
-    # Setup figure and image for grid
-    fig_grid, ax_grid = plt.subplots(figsize=(10,10))
-    ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
-
-    # Setup figure and image for distance
-    fig_distance, ax_distance = plt.subplots(figsize=(10,10))
-    ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
-    
+    final_path = [[] * len(missions)]
     # Start path finding
+    start = time.time()
+    # ----------------------------------------
+    
     paths = []
+    # Get the mission for each hauler
     for hauler_id, mission in enumerate(missions_pos):
         start_pos = hauler_positions[hauler_id]
-        # Loop over the mission positions
+        # Get the mission positions for the hauler
         for next_pos in mission:
             # Use BFS to map the distance
+            # last_dist = bfs(start_pos, next_pos, grid_map, distance, pred)
+            # Use A* to find the path
             last_dist = astar(start_pos, next_pos, grid_map, distance, pred)
             # Find the path
             path =[]
@@ -257,14 +265,36 @@ if __name__ == "__main__":
                 for pos in path:
                     x, y = pos
                     grid_map[x,y] = nPath+1
+        # Mission completed by hauler
+        final_path[hauler_id] = path
 
-
-            
+    # Stop path finding
+    end = time.time()
+    execution_time = int((end - start)*1000)
+    
     for pos in path:
         x, y = pos
         last_dist[x,y] = -2
+    
+    # Setup figure and image for grid
+    fig_grid, ax_grid = plt.subplots(figsize=(10,10))
+    ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
+
+    # Setup figure and image for distance
+    fig_distance, ax_distance = plt.subplots(figsize=(10,10))
+    ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
     
     # Show the grid
     ax_grid.imshow(grid_map, cmap='terrain', interpolation='nearest', vmin=-1, vmax=6)
     ax_distance.imshow(last_dist, cmap='terrain', interpolation='nearest', vmin=-2, vmax=GRID_SIZE*2)
     plt.show()
+    
+    # Caclulate the total distance
+    path_len = [len(path) for path in paths]
+    total_distance = sum(path_len)
+    
+    print(f"{total_distance = }")
+    for i, path in enumerate(paths):
+        print(f"{i+1} ({len(path)}): {path}")
+        
+    write_output(total_distance, completion_time, execution_time, paths)
