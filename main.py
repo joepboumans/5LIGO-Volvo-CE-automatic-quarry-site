@@ -127,9 +127,6 @@ def astar(start, end, grid_map, distance, pred):
         # Find the node with the lowest cost
         min_cost = 1000
         for node in openQueue:
-            if node in closedQueue:
-                openQueue.remove(node)
-                continue
             x, y = node
             # Get G cost
             cost = distance[x,y]
