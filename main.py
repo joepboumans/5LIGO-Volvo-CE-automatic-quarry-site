@@ -2,8 +2,9 @@ import re
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import colors
+from matplotlib import animation
 
-GRID_SIZE = 12
+GRID_SIZE = 18
 WALL = -1
 
 def check_for_match(match):
@@ -61,7 +62,7 @@ def read_mission(file='mission.txt'):
     return missions
 
 
-def bfs(start, end, grid_map, distance, pred):
+def bfs(start, end, grid_map, distance, pred, distance_plt):
     # Unpack start and end
     start_x, start_y = start
     end_x, end_y = end
@@ -79,7 +80,7 @@ def bfs(start, end, grid_map, distance, pred):
         s = queue.pop(0)
         bfs.append(s)
         
-        # 
+        # On reaching the end point, stop
         if s == (end_x, end_y):
             distance[end_x, end_y] = -2
             break
@@ -105,6 +106,66 @@ def bfs(start, end, grid_map, distance, pred):
             visited[x,y+1] = True
             distance[x,y+1] = distance[x,y] + 1
             pred[x,y+1] = s
+        
+        # After each find plot the distance
+        distance_plt.imshow(distance, cmap='hot', interpolation='nearest')
+        plt.pause(0.025)
+        
+    return distance
+
+def astar(start, end, grid_map, distance, pred):
+    # Unpack start and end
+    start_x, start_y = start
+    end_x, end_y = end
+    
+    # A Star
+    openQueue = []
+    closedQueue = []
+    
+    openQueue.append((start_x, start_y))
+    while openQueue:
+        # Find the node with the lowest cost
+        min_cost = 1000
+        for node in openQueue:
+            if node in closedQueue:
+                openQueue.remove(node)
+                continue
+            x, y = node
+            # Get G cost
+            cost = distance[x,y]
+            # Get H cost
+            cost += abs(end_x - x) + abs(end_y - y)
+            # Check if cost is lower than min_cost
+            if cost < min_cost:
+                min_cost = cost
+                current = node
+        # Remove the node from the open queue
+        openQueue.remove(current)
+        # Add the node to the closed queue
+        closedQueue.append(current)
+        
+        # Check if the end is reached
+        if current == (end_x, end_y):
+            return distance
+        
+        # Check the neighbors
+        x, y = current
+        if x > 0 and grid_map[x-1, y] != WALL and not (x-1, y) in closedQueue:
+            openQueue.append((x-1, y))
+            distance[x-1,y] = distance[x,y] + 1
+            pred[x-1,y] = current
+        if x < GRID_SIZE-1 and grid_map[x+1, y] != WALL and not (x+1, y) in closedQueue:
+            openQueue.append((x+1, y))
+            distance[x+1,y] = distance[x,y] + 1
+            pred[x+1,y] = current
+        if y > 0 and grid_map[x, y-1] != WALL and not (x, y-1) in closedQueue:
+            openQueue.append((x, y-1))
+            distance[x,y-1] = distance[x,y] + 1
+            pred[x,y-1] = current
+        if y < GRID_SIZE-1 and grid_map[x, y+1] != WALL and not (x, y+1) in closedQueue:
+            openQueue.append((x, y+1))
+            distance[x,y+1] = distance[x,y] + 1
+            pred[x,y+1] = current
             
     return distance
 
@@ -158,6 +219,17 @@ if __name__ == "__main__":
         grid_map[so[0], so[1]] = WALL
         distance[so[0], so[1]] = WALL
     
+    # Reset distance after each found point
+    clean_distance = distance.copy()
+    
+    # Setup figure and image for grid
+    fig_grid, ax_grid = plt.subplots(figsize=(10,10))
+    ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
+
+    # Setup figure and image for distance
+    fig_distance, ax_distance = plt.subplots(figsize=(10,10))
+    ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
+    
     # Start path finding
     paths = []
     for hauler_id, mission in enumerate(missions_pos):
@@ -165,28 +237,29 @@ if __name__ == "__main__":
         # Loop over the mission positions
         for next_pos in mission:
             # Use BFS to map the distance
-            bfs(start_pos, next_pos, grid_map, distance, pred)
+            last_dist = astar(start_pos, next_pos, grid_map, distance, pred)
             # Find the path
             path =[]
             path = find_path(start_pos, next_pos, path, pred)
             # Add path to paths and update start_pos
             start_pos = next_pos
             paths.append(path)
-    
-    print(paths)
-    
-    for nPath, path in enumerate(paths):
-        for pos in path:
-            x, y = pos
-            grid_map[x,y] = nPath+1
+            # Reset distance
+            distance = clean_distance.copy()
+            
+            # Plot the path
+            for nPath, path in enumerate(paths):
+                for pos in path:
+                    x, y = pos
+                    grid_map[x,y] = nPath+1
+
+
             
     for pos in path:
         x, y = pos
-        distance[x,y] = 10
-        
-    # print(distance)
-    # print(grid_map)
+        last_dist[x,y] = -2
     
-    plt.figure(figsize=(10,10))
-    plt.imshow(grid_map, cmap='hot', interpolation='nearest')
+    # Show the grid
+    ax_grid.imshow(grid_map, cmap='terrain', interpolation='nearest', vmin=-1, vmax=6)
+    ax_distance.imshow(last_dist, cmap='terrain', interpolation='nearest', vmin=-2, vmax=GRID_SIZE*2)
     plt.show()
