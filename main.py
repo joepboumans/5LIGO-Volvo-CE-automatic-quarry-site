@@ -190,15 +190,14 @@ def find_path(start_pos, end_pos, path, pred):
     x_start, y_start = start_pos
     # Walk back from the end point to the start point
     while pred[x,y] != (x_start, y_start):
-        path.append((x,y))
+        path.append((x+1,y+1))
         pos = pred[x,y]
         x, y = pos
     # Add last and start point
-    path.append((x,y))
-    path.append((x_start, y_start))
-    
+    path.append((x+1,y+1))
+    # path.append((x_start, y_start))
+    path.reverse()
     return path
-
 if __name__ == "__main__":
     # Read configuration files
     nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
@@ -237,13 +236,15 @@ if __name__ == "__main__":
     clean_distance = distance.copy()
     
     final_path = [[] * len(missions)]
+    completion_times = [0 * len(missions)]
     # Start path finding
     start = time.time()
     # ----------------------------------------
     
-    paths = []
+    
     # Get the mission for each hauler
     for hauler_id, mission in enumerate(missions_pos):
+        paths = []
         start_pos = hauler_positions[hauler_id]
         # Get the mission positions for the hauler
         for next_pos in mission:
@@ -257,44 +258,47 @@ if __name__ == "__main__":
             # Add path to paths and update start_pos
             start_pos = next_pos
             paths.append(path)
+            final_path[hauler_id] += path
             # Reset distance
             distance = clean_distance.copy()
             
-            # Plot the path
-            for nPath, path in enumerate(paths):
-                for pos in path:
-                    x, y = pos
-                    grid_map[x,y] = nPath+1
-        # Mission completed by hauler
-        final_path[hauler_id] = path
+            # # Plot the path
+            # for nPath, path in enumerate(paths):
+            #     for pos in path:
+            #         x, y = pos
+            #         grid_map[x-1,y-1] = nPath+1
+        
+        # Complete the mission
+        completion_times[hauler_id] = len(final_path[hauler_id])
+        final_path[hauler_id].insert(0, hauler_positions[hauler_id])
 
     # Stop path finding
     end = time.time()
     execution_time = int((end - start)*1000)
     
-    for pos in path:
-        x, y = pos
-        last_dist[x,y] = -2
+    # for pos in path:
+    #     x, y = pos
+    #     last_dist[x,y] = -2
     
-    # Setup figure and image for grid
-    fig_grid, ax_grid = plt.subplots(figsize=(10,10))
-    ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
+    # # Setup figure and image for grid
+    # fig_grid, ax_grid = plt.subplots(figsize=(10,10))
+    # ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
 
-    # Setup figure and image for distance
-    fig_distance, ax_distance = plt.subplots(figsize=(10,10))
-    ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
+    # # Setup figure and image for distance
+    # fig_distance, ax_distance = plt.subplots(figsize=(10,10))
+    # ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
     
-    # Show the grid
-    ax_grid.imshow(grid_map, cmap='terrain', interpolation='nearest', vmin=-1, vmax=6)
-    ax_distance.imshow(last_dist, cmap='terrain', interpolation='nearest', vmin=-2, vmax=GRID_SIZE*2)
-    plt.show()
+    # # Show the grid
+    # ax_grid.imshow(grid_map, cmap='terrain', interpolation='nearest', vmin=-1, vmax=6)
+    # ax_distance.imshow(last_dist, cmap='terrain', interpolation='nearest', vmin=-2, vmax=GRID_SIZE*2)
+    # plt.show()
     
     # Caclulate the total distance
-    path_len = [len(path) for path in paths]
-    total_distance = sum(path_len)
+    path_len = [len(path) for path in final_path]
+    makespan = max(path_len)
     
-    print(f"{total_distance = }")
-    for i, path in enumerate(paths):
-        print(f"{i+1} ({len(path)}): {path}")
+    # print(f"{makespan = }")
+    # for i, path in enumerate(final_path):
+    #     print(f"{i+1} ({len(path)}): {path}")
         
-    write_output(total_distance, completion_time, execution_time, paths)
+    write_output(makespan, completion_times, execution_time, final_path)
