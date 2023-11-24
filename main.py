@@ -65,13 +65,26 @@ def read_mission(file='mission.txt'):
 def write_output(makespan, completion_times, execution_time, paths, file='output.txt'):
     with open(file, 'w') as f:
         f.write("//Quantitative values\n")
-        f.write(f'{makespan} \t//Makespan\n')
+        f.write(f'{makespan - 1} \t//Makespan\n')
+        
+        # Show the completion time for each hauler
         for i, completion_time in enumerate(completion_times):
             f.write(f'{completion_time}\t//Mission completion time hauler{i+1}\n')
+            
+        # Show the execution time
         f.write(f'{execution_time}\t//Application execution time (in millisecond)\n')
         f.write("//Path to the final destination\n")
-        for path in paths:
-            f.write(f'{path}\n')
+        
+        # Create makespan x nHaulers matrix
+        for i in range(makespan):
+            f.write(f'{i}')
+            # Get the pos of each hauler or the last pos
+            for path in paths:
+                try:
+                    f.write(f',{path[i]}')
+                except:
+                    f.write(f',{path[-1]}')
+            f.write('\n')
 
 def bfs(start, end, grid_map, distance, pred):
     # Unpack start and end
@@ -190,14 +203,14 @@ def find_path(start_pos, end_pos, path, pred):
     x_start, y_start = start_pos
     # Walk back from the end point to the start point
     while pred[x,y] != (x_start, y_start):
-        path.append((x+1,y+1))
+        path.append([x+1,y+1])
         pos = pred[x,y]
         x, y = pos
     # Add last and start point
-    path.append((x+1,y+1))
-    # path.append((x_start, y_start))
+    path.append([x+1,y+1])
     path.reverse()
     return path
+
 if __name__ == "__main__":
     # Read configuration files
     nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
@@ -206,7 +219,7 @@ if __name__ == "__main__":
     
     # Convert mission to coordinates
     for hauler_id, mission in enumerate(missions):
-        mission_pos = [[] for i in range(len(mission))]
+        mission_pos = [[]] * len(mission)
         for i, pos in enumerate(mission):
             match pos[0]:
                 case 'L':
@@ -235,12 +248,11 @@ if __name__ == "__main__":
     # Reset distance after each found point
     clean_distance = distance.copy()
     
-    final_path = [[] * len(missions)]
-    completion_times = [0 * len(missions)]
+    final_path = [[]] * len(missions)
+    completion_times = [0] * len(missions)
     # Start path finding
     start = time.time()
     # ----------------------------------------
-    
     
     # Get the mission for each hauler
     for hauler_id, mission in enumerate(missions_pos):
@@ -258,7 +270,7 @@ if __name__ == "__main__":
             # Add path to paths and update start_pos
             start_pos = next_pos
             paths.append(path)
-            final_path[hauler_id] += path
+            final_path[hauler_id] = final_path[hauler_id]  + path
             # Reset distance
             distance = clean_distance.copy()
             
@@ -270,7 +282,7 @@ if __name__ == "__main__":
         
         # Complete the mission
         completion_times[hauler_id] = len(final_path[hauler_id])
-        final_path[hauler_id].insert(0, hauler_positions[hauler_id])
+        final_path[hauler_id] = [hauler_positions[hauler_id]] + final_path[hauler_id]
 
     # Stop path finding
     end = time.time()
