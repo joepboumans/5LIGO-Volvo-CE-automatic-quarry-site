@@ -57,7 +57,6 @@ def read_mission(file='mission.txt'):
         # Read the mission
         missions = []
         for line in lines:
-            print(line)
             mission = re.findall(r'(\w\d)', line)
             missions += [mission]
     return missions
@@ -72,12 +71,17 @@ def write_output(makespan, completion_times, execution_time, paths, file='output
             f.write(f'{completion_time}\t//Mission completion time hauler{i+1}\n')
             
         # Show the execution time
-        f.write(f'{execution_time}\t//Application execution time (in millisecond)\n')
+        f.write(f'{execution_time:.4f}\t//Application execution time (in millisecond)\n')
         f.write("//Path to the final destination\n")
         
         # Create makespan x nHaulers matrix
         for i in range(makespan):
             f.write(f'{i}')
+            
+            for path in paths:
+                for pos in path:
+                    pos[0] += 1
+                    pos[1] += 1
             # Get the pos of each hauler or the last pos
             for path in paths:
                 try:
@@ -217,6 +221,7 @@ if __name__ == "__main__":
     missions = read_mission()
     missions_pos = [[] for i in range(len(missions))]
     
+
     # Convert mission to coordinates
     for hauler_id, mission in enumerate(missions):
         mission_pos = [[]] * len(mission)
@@ -250,10 +255,10 @@ if __name__ == "__main__":
     
     final_path = [[]] * len(missions)
     completion_times = [0] * len(missions)
+    
+    # ----------------------------------------
     # Start path finding
     start = time.time()
-    # ----------------------------------------
-    
     # Get the mission for each hauler
     for hauler_id, mission in enumerate(missions_pos):
         paths = []
@@ -286,7 +291,7 @@ if __name__ == "__main__":
 
     # Stop path finding
     end = time.time()
-    execution_time = int((end - start)*1000)
+    execution_time = (end - start)*1000
     
     # for pos in path:
     #     x, y = pos

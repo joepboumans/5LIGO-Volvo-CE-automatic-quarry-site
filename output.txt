@@ -1,11 +1,33 @@
 //Quantitative values
-31 	//Makespan
-9	//Mission completion time hauler1
-10	//Mission completion time hauler2
-6	//Mission completion time hauler3
-6	//Mission completion time hauler4
-0	//Application execution time (in millisecond)
-[(1, 4), (1, 3), (2, 3), (2, 2), (3, 2), (3, 1), (4, 1), (5, 1), (6, 1)]
-[(8, 6), (8, 5), (7, 5), (7, 4), (6, 4), (5, 4), (4, 4), (3, 4), (2, 4), (1, 4)]
-[(11, 8), (11, 7), (10, 7), (10, 6), (9, 6), (8, 6)]
-[(8, 6), (8, 7), (9, 7), (9, 8), (10, 8), (11, 8)]
+27 	//Makespan
+27	//Mission completion time hauler1
+0.4997	//Application execution time (in millisecond)
+//Path to the final destination
+0,[7, 2]
+1,[8, 4]
+2,[8, 5]
+3,[8, 6]
+4,[9, 8]
+5,[9, 9]
+6,[10, 11]
+7,[10, 12]
+8,[11, 14]
+9,[13, 15]
+10,[15, 16]
+11,[17, 17]
+12,[19, 18]
+13,[21, 19]
+14,[23, 20]
+15,[24, 22]
+16,[26, 23]
+17,[27, 25]
+18,[29, 26]
+19,[31, 27]
+20,[32, 29]
+21,[34, 30]
+22,[35, 32]
+23,[35, 33]
+24,[35, 34]
+25,[36, 34]
+26,[36, 35]
+27,[37, 35]
