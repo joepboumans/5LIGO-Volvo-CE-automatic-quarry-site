@@ -64,24 +64,25 @@ def read_mission(file='mission.txt'):
 def write_output(makespan, completion_times, execution_time, paths, file='output.txt'):
     with open(file, 'w') as f:
         f.write("//Quantitative values\n")
-        f.write(f'{makespan - 1} \t//Makespan\n')
+        f.write(f'{makespan - 1}\t//Makespan\n')
         
         # Show the completion time for each hauler
         for i, completion_time in enumerate(completion_times):
-            f.write(f'{completion_time}\t//Mission completion time hauler{i+1}\n')
+            f.write(f'{completion_time}\t//Mission completion time hauler {i+1}\n')
             
         # Show the execution time
         f.write(f'{execution_time:.4f}\t//Application execution time (in millisecond)\n')
         f.write("//Path to the final destination\n")
         
+        # Increase by one as the grid starts at 1
+        for path in paths:
+            for pos in path:
+                pos[0] += 1
+                pos[1] += 1
         # Create makespan x nHaulers matrix
         for i in range(makespan):
             f.write(f'{i}')
-            
-            for path in paths:
-                for pos in path:
-                    pos[0] += 1
-                    pos[1] += 1
+
             # Get the pos of each hauler or the last pos
             for path in paths:
                 try:
@@ -207,11 +208,12 @@ def find_path(start_pos, end_pos, path, pred):
     x_start, y_start = start_pos
     # Walk back from the end point to the start point
     while pred[x,y] != (x_start, y_start):
-        path.append([x+1,y+1])
+        path.append([x,y])
         pos = pred[x,y]
         x, y = pos
     # Add last and start point
-    path.append([x+1,y+1])
+    path.append([x,y])
+    # path.append([x_start,y_start])
     path.reverse()
     return path
 
