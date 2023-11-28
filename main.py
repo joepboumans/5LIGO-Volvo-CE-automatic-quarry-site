@@ -91,53 +91,6 @@ def write_output(makespan, completion_times, execution_time, paths, file='output
                     f.write(f',{path[-1]}')
             f.write('\n')
 
-def bfs(start, end, grid_map, distance, pred):
-    # Unpack start and end
-    start_x, start_y = start
-    end_x, end_y = end
-    
-    # BFS
-    visited = np.full((GRID_SIZE, GRID_SIZE), False)
-    queue = []
-    bfs = []
-    
-    # Start from Hauler position
-    queue.append((start_x, start_y))
-    visited[start_x, (start_y)] = True
-    
-    while queue:
-        s = queue.pop(0)
-        bfs.append(s)
-        
-        # On reaching the end point, stop
-        if s == (end_x, end_y):
-            distance[end_x, end_y] = -2
-            break
-        
-        x, y = s
-        if x > 0 and grid_map[x-1, y] != WALL and not visited[x-1,y]:
-            queue.append((x-1, y))
-            visited[x-1,y] = True
-            distance[x-1,y] = distance[x,y] + 1
-            pred[x-1,y] = s
-        if x < GRID_SIZE-1 and grid_map[x+1, y] != WALL and not visited[x+1,y]:
-            queue.append((x+1, y))
-            visited[x+1,y] = True
-            distance[x+1,y] = distance[x,y] + 1
-            pred[x+1,y] = s
-        if y > 0 and grid_map[x, y-1] != WALL and not visited[x,y-1]:
-            queue.append((x, y-1))
-            visited[x,y-1] = True
-            distance[x,y-1] = distance[x,y] + 1
-            pred[x,y-1] = s
-        if y < GRID_SIZE-1 and grid_map[x, y+1] != WALL and not visited[x,y+1]:
-            queue.append((x, y+1))
-            visited[x,y+1] = True
-            distance[x,y+1] = distance[x,y] + 1
-            pred[x,y+1] = s
-        
-    return distance
-
 def astar(start, end, grid_map, distance, pred):
     # Unpack start and end
     start_x, start_y = start
@@ -267,8 +220,6 @@ if __name__ == "__main__":
         start_pos = hauler_positions[hauler_id]
         # Get the mission positions for the hauler
         for next_pos in mission:
-            # Use BFS to map the distance
-            # last_dist = bfs(start_pos, next_pos, grid_map, distance, pred)
             # Use A* to find the path
             last_dist = astar(start_pos, next_pos, grid_map, distance, pred)
             # Find the path
