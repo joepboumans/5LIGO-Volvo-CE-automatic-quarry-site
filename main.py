@@ -7,10 +7,12 @@ from matplotlib import animation
 
 GRID_SIZE = 12
 WALL = -1
+ENERGY_COST = 10 * 5
+CHARGE_TIME = 5
 
 def check_for_match(match):
     if match:
-        return match.group(1)
+        return match[0]
     else:
         return 0
     
@@ -156,6 +158,43 @@ def astar(start, end, grid_map, distance, pred):
             
     return distance
 
+def distance_to_charger(charger_pos, mission_pos, grid_map, distance, pred):
+    # Start at charger point
+    start_x, start_y = charger_pos
+    reached = 0
+    visited = np.full((GRID_SIZE, GRID_SIZE), fill_value=False, dtype=bool)
+    # Use BFS to find the shortest path to the mission point
+    queue = []
+    queue.append((start_x, start_y))
+    while queue:
+        s = queue.pop(0)
+        x, y = s
+        visited[x,y] = True
+        # Check if the mission points are reached
+        for mission in mission_pos:
+            if s == tuple(mission):
+                reached += 1
+            if reached == len(mission_pos):
+                return distance
+            
+        # Check neighbors
+        for neighbor in [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]:
+            # Check ranges
+            x, y = neighbor
+            if x < 0 or x > GRID_SIZE-1 or y < 0 or y > GRID_SIZE-1:
+                continue
+            
+            # Check if neighbor is a wall
+            if grid_map[x,y] == WALL:
+                continue
+            
+            if not visited[x,y]:
+                queue.append(neighbor)
+                pred[x, y] = s
+                distance[x, y] = distance[s] + 1
+    
+    return distance
+    
 def find_path(start_pos, end_pos, path, pred):
     x, y = end_pos
     x_start, y_start = start_pos
@@ -172,29 +211,28 @@ def find_path(start_pos, end_pos, path, pred):
 
 if __name__ == "__main__":
     # Read configuration files
-    nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
-    missions = read_mission()
+    nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_position, max_energy, initial_energy = read_config(file='battery_config.txt')
+    missions = read_mission(file='battery_mission.txt')
     missions_pos = [[] for i in range(len(missions))]
     
-
+    unique_missions = set()
     # Convert mission to coordinates
     for hauler_id, mission in enumerate(missions):
-        mission_pos = [[]] * len(mission)
+        mission_pos = [()] * len(mission)
         for i, pos in enumerate(mission):
             match pos[0]:
                 case 'L':
                     mission_pos[i] = LP_positions[int(pos[1])-1]
                 case 'U':
                     mission_pos[i] = ULP_positions[int(pos[1])-1]
-                case 'S':
-                    mission_pos[i] = SO_positions[int(pos[1])-1]
-                case 'C':
-                    mission_pos[i] = CS_positions[int(pos[1])-1]
                 case _:
                     print("Error: Mission not found")
                     
         missions_pos[hauler_id] = mission_pos
-    
+    for mission_pos in missions_pos:
+        for pos in mission_pos:
+            unique_missions.add(tuple(pos))
+
     # Create map and distance, pred for path finding
     grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
     distance = np.zeros((GRID_SIZE, GRID_SIZE))
@@ -209,6 +247,7 @@ if __name__ == "__main__":
     clean_distance = distance.copy()
     
     final_path = [[]] * len(missions)
+    final_paths = [[]] * len(missions)
     completion_times = [0] * len(missions)
     
     # ----------------------------------------
@@ -240,8 +279,15 @@ if __name__ == "__main__":
         
         # Complete the mission
         completion_times[hauler_id] = len(final_path[hauler_id])
+        
+        final_paths[hauler_id]  = paths.copy()
         final_path[hauler_id] = [hauler_positions[hauler_id]] + final_path[hauler_id]
 
+    # ----------------------------------------
+    # Find the distance to the charger
+    pred = {}
+    distance = distance_to_charger(CS_position[0], unique_missions, grid_map, distance, pred)
+    
     # Stop path finding
     end = time.time()
     execution_time = (end - start)*1000
@@ -254,14 +300,14 @@ if __name__ == "__main__":
     # fig_grid, ax_grid = plt.subplots(figsize=(10,10))
     # ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
 
-    # # Setup figure and image for distance
-    # fig_distance, ax_distance = plt.subplots(figsize=(10,10))
-    # ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
+    # Setup figure and image for distance
+    fig_distance, ax_distance = plt.subplots(figsize=(10,10)) 
+    ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
     
     # # Show the grid
     # ax_grid.imshow(grid_map, cmap='terrain', interpolation='nearest', vmin=-1, vmax=6)
     # ax_distance.imshow(last_dist, cmap='terrain', interpolation='nearest', vmin=-2, vmax=GRID_SIZE*2)
-    # plt.show()
+    plt.show()
     
     # Caclulate the total distance
     path_len = [len(path) for path in final_path]
