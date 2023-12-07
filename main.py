@@ -284,14 +284,14 @@ if __name__ == "__main__":
     # Find the distance to the charger
     pred = {}
     distance = distance_to_charger(CS_position, unique_missions, grid_map, distance, pred)
-    # Find the path
-    charger_paths=[]
+    # Find the path from charger to mission points
+    charger_paths = {}
     for id, pos in unique_missions.items():
         path =[]
         path = find_path(CS_position, pos, path, pred)
-        charger_paths.append(path)
+        charger_paths[id] = [CS_position] + path
     
-    
+    print(f"{charger_paths = }")
     # ----------------------------------------
     # 
     
@@ -299,17 +299,10 @@ if __name__ == "__main__":
     end = time.time()
     execution_time = (end - start)*1000
     
-    # for pos in path:
-    #     x, y = pos
-    #     last_dist[x,y] = -2
-    
     # # Setup figure and image for grid
     # fig_grid, ax_grid = plt.subplots(figsize=(10,10))
     # ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
-    for pos in unique_missions.values():
-            grid_map[pos[0], pos[1]] = 15
-            distance[pos[0], pos[1]] = 15
-            print(f"Mission: {pos}")
+
     # Setup figure and image for distance
     fig_distance, ax_distance = plt.subplots(figsize=(10,10)) 
     ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
