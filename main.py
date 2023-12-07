@@ -46,12 +46,13 @@ def read_config(file='config.txt'):
         ULP_positions = [[x-1, y-1] for x, y in ULP_positions]
         SO_positions = [[x-1, y-1] for x, y in SO_positions]
         CS_positions = [[x-1, y-1] for x, y in CS_positions]
+        CS_position = CS_positions[0]
         
         # Get the max battery capacity and initial energy
         max_energy = check_for_match(re.findall(r'(\d+)', lines[10]))
         initial_energy = check_for_match(re.findall(r'(\d+)', lines[11]))
         
-    return nHaulers, nLP, nULP, nSO, nCS, init_haulers, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy
+    return nHaulers, nLP, nULP, nSO, nCS, init_haulers, LP_positions, ULP_positions, SO_positions, CS_position, max_energy, initial_energy
     
 def read_mission(file='mission.txt'):
     with open(file, 'r') as f:
@@ -171,7 +172,7 @@ def distance_to_charger(charger_pos, mission_pos, grid_map, distance, pred):
         x, y = s
         visited[x,y] = True
         # Check if the mission points are reached
-        for mission in mission_pos:
+        for mission in mission_pos.values():
             if s == tuple(mission):
                 reached += 1
             if reached == len(mission_pos):
@@ -215,7 +216,7 @@ if __name__ == "__main__":
     missions = read_mission(file='battery_mission.txt')
     missions_pos = [[] for i in range(len(missions))]
     
-    unique_missions = set()
+    unique_missions = {}
     # Convert mission to coordinates
     for hauler_id, mission in enumerate(missions):
         mission_pos = [()] * len(mission)
@@ -229,9 +230,9 @@ if __name__ == "__main__":
                     print("Error: Mission not found")
                     
         missions_pos[hauler_id] = mission_pos
-    for mission_pos in missions_pos:
-        for pos in mission_pos:
-            unique_missions.add(tuple(pos))
+    for mission, mission_pos in zip(missions, missions_pos):
+        for id, pos in zip(mission, mission_pos):
+            unique_missions[id] = pos
 
     # Create map and distance, pred for path finding
     grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
@@ -286,7 +287,12 @@ if __name__ == "__main__":
     # ----------------------------------------
     # Find the distance to the charger
     pred = {}
-    distance = distance_to_charger(CS_position[0], unique_missions, grid_map, distance, pred)
+    distance = distance_to_charger(CS_position, unique_missions, grid_map, distance, pred)
+    charger_paths=[]
+    
+    
+    # ----------------------------------------
+    # 
     
     # Stop path finding
     end = time.time()
