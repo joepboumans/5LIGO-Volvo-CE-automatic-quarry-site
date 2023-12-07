@@ -164,23 +164,17 @@ def distance_to_charger(charger_pos, mission_pos, grid_map, distance, pred):
     start_x, start_y = charger_pos
     reached = 0
     visited = np.full((GRID_SIZE, GRID_SIZE), fill_value=False, dtype=bool)
-    # Use BFS to find the shortest path to the mission point
+    # Use BFS to find the shortest path to the mission points
     queue = []
     queue.append((start_x, start_y))
     while queue:
         s = queue.pop(0)
         x, y = s
         visited[x,y] = True
-        # Check if the mission points are reached
-        for mission in mission_pos.values():
-            if s == tuple(mission):
-                reached += 1
-            if reached == len(mission_pos):
-                return distance
             
         # Check neighbors
         for neighbor in [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]:
-            # Check ranges
+            # Check if not outside ranges
             x, y = neighbor
             if x < 0 or x > GRID_SIZE-1 or y < 0 or y > GRID_SIZE-1:
                 continue
@@ -189,11 +183,19 @@ def distance_to_charger(charger_pos, mission_pos, grid_map, distance, pred):
             if grid_map[x,y] == WALL:
                 continue
             
-            if not visited[x,y]:
+            # If not visited add it to the queue
+            if not visited[x,y] and not neighbor in queue:
                 queue.append(neighbor)
                 pred[x, y] = s
                 distance[x, y] = distance[s] + 1
-    
+                
+                # Check if the neighbor is end point
+                for mission in mission_pos.values():
+                    if neighbor == tuple(mission):
+                        reached += 1
+                    if reached == len(mission_pos):
+                        return distance
+
     return distance
     
 def find_path(start_pos, end_pos, path, pred):
@@ -271,12 +273,6 @@ if __name__ == "__main__":
             final_path[hauler_id] = final_path[hauler_id]  + path
             # Reset distance
             distance = clean_distance.copy()
-            
-            # # Plot the path
-            # for nPath, path in enumerate(paths):
-            #     for pos in path:
-            #         x, y = pos
-            #         grid_map[x-1,y-1] = nPath+1
         
         # Complete the mission
         completion_times[hauler_id] = len(final_path[hauler_id])
@@ -288,7 +284,12 @@ if __name__ == "__main__":
     # Find the distance to the charger
     pred = {}
     distance = distance_to_charger(CS_position, unique_missions, grid_map, distance, pred)
+    # Find the path
     charger_paths=[]
+    for id, pos in unique_missions.items():
+        path =[]
+        path = find_path(CS_position, pos, path, pred)
+        charger_paths.append(path)
     
     
     # ----------------------------------------
@@ -305,7 +306,10 @@ if __name__ == "__main__":
     # # Setup figure and image for grid
     # fig_grid, ax_grid = plt.subplots(figsize=(10,10))
     # ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
-
+    for pos in unique_missions.values():
+            grid_map[pos[0], pos[1]] = 15
+            distance[pos[0], pos[1]] = 15
+            print(f"Mission: {pos}")
     # Setup figure and image for distance
     fig_distance, ax_distance = plt.subplots(figsize=(10,10)) 
     ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
