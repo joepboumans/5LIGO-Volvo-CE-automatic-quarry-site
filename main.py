@@ -46,13 +46,12 @@ def read_config(file='config.txt'):
         ULP_positions = [[x-1, y-1] for x, y in ULP_positions]
         SO_positions = [[x-1, y-1] for x, y in SO_positions]
         CS_positions = [[x-1, y-1] for x, y in CS_positions]
-        CS_position = CS_positions[0]
         
         # Get the max battery capacity and initial energy
         max_energy = check_for_match(re.findall(r'(\d+)', lines[10]))
         initial_energy = check_for_match(re.findall(r'(\d+)', lines[11]))
         
-    return nHaulers, nLP, nULP, nSO, nCS, init_haulers, LP_positions, ULP_positions, SO_positions, CS_position, max_energy, initial_energy
+    return nHaulers, nLP, nULP, nSO, nCS, init_haulers, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy
     
 def read_mission(file='mission.txt'):
     with open(file, 'r') as f:
@@ -214,7 +213,7 @@ def find_path(start_pos, end_pos, path, pred):
 
 if __name__ == "__main__":
     # Read configuration files
-    nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_position, max_energy, initial_energy = read_config(file='battery_config.txt')
+    nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config(file='battery_config.txt')
     missions = read_mission(file='battery_mission.txt')
     missions_pos = [[] for i in range(len(missions))]
     
@@ -280,20 +279,22 @@ if __name__ == "__main__":
         final_paths[hauler_id]  = paths.copy()
         final_path[hauler_id] = [hauler_positions[hauler_id]] + final_path[hauler_id]
 
-    # ----------------------------------------
-    # Find the distance to the charger
-    pred = {}
-    distance = distance_to_charger(CS_position, unique_missions, grid_map, distance, pred)
-    # Find the path from charger to mission points
-    charger_paths = {}
-    for id, pos in unique_missions.items():
-        path =[]
-        path = find_path(CS_position, pos, path, pred)
-        charger_paths[id] = [CS_position] + path
-    
-    print(f"{charger_paths = }")
-    # ----------------------------------------
-    # 
+    if CS_positions:
+        CS_position = CS_positions[0]
+        # ----------------------------------------
+        # Find the distance to the charger
+        pred = {}
+        distance = distance_to_charger(CS_position, unique_missions, grid_map, distance, pred)
+        # Find the path from charger to mission points
+        charger_paths = {}
+        for id, pos in unique_missions.items():
+            path =[]
+            path = find_path(CS_position, pos, path, pred)
+            charger_paths[id] = [CS_position] + path
+        
+        print(f"{charger_paths = }")
+        # ----------------------------------------
+        # 
     
     # Stop path finding
     end = time.time()
