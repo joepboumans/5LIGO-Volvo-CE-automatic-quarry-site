@@ -154,7 +154,6 @@ def astar(start, end, grid_map, distance, pred):
                 if distance[current] + 1 < distance[x,y]:
                     distance[x,y] = distance[current] + 1
                     pred[x,y] = current
-                    
             
     return distance
 
@@ -196,7 +195,50 @@ def distance_to_charger(charger_pos, mission_pos, grid_map, distance, pred):
                         return distance
 
     return distance
+
+def path_to_end(graph, node, path, idx):
+    path.append(node['id'])
+    if node['next']:
+        idx += 1
+        path_to_end(graph, graph[idx], path, idx)
+        
+    return path
+
+def find_shortest_path_energy(max_cap, init_cap, total_cost, graph, mission):
+    openQueue = []
+    closedQueue = []
+    path = []
+
+    idx = 0
+    openQueue.append(graph[idx])
+    graph[idx]['curr_cap'] = init_cap
+    graph[idx]['end'] = total_cost
     
+    while openQueue:
+        # Find the node with the lowest cost
+        min_cost = 1000000
+        for node in openQueue:
+            id, next, CS, curr_cap, end_cost = node.items()
+            
+            if curr_cap > end_cost:
+                path = path_to_end(graph, node, path, idx)
+                print(path)
+                return path
+            
+            print(node)
+            print(f"{node.items()}")
+            
+        
+        openQueue.pop(0)
+            
+    #         # Check if cost is lower than min_cost
+    #         if cost < min_cost:
+    #             min_cost = cost
+    #             current = node
+        
+    #     # Remove the node from the open queue
+    #     openQueue.remove(current)
+
 def find_path(start_pos, end_pos, path, pred):
     x, y = end_pos
     x_start, y_start = start_pos
@@ -254,7 +296,7 @@ if __name__ == "__main__":
     
     # ----------------------------------------
     # Start path finding
-    start = time.time()
+    start = time.perf_counter()
     # Get the mission for each hauler
     for hauler_id, mission in enumerate(missions_pos):
         paths = []
@@ -292,12 +334,31 @@ if __name__ == "__main__":
             path = find_path(CS_position, pos, path, pred)
             charger_paths[id] = [CS_position] + path
         
-        print(f"{charger_paths = }")
+        # print(f"{charger_paths = }")
         # ----------------------------------------
-        # 
-    
+        # Create graph for hauler with charger
+        graph = []
+        for mission in missions:
+            for i,id in enumerate(mission):
+                try:
+                    
+                    next_node_cost = len(paths[i])
+                    charger_cost = (len(charger_paths[id]))
+                    charger_next_cost = len(charger_paths[mission[i+1]])
+                    
+                    graph.append({'id': id, 'next': next_node_cost, 'C': (charger_cost, charger_next_cost), 'end': 0, 'curr_cap':0})
+                except:
+                    graph.append({'id': id, 'next': None, 'C': (charger_cost, charger_next_cost), 'end': 0, 'curr_cap':0})
+        print(graph)
+        
+        # ----------------------------------------
+        # Find the shortest path with energy
+        
+        total_energy_cost = len(final_paths[0]) * ENERGY_COST
+        find_shortest_path_energy(max_energy, initial_energy, total_energy_cost, graph, missions[0])
+        
     # Stop path finding
-    end = time.time()
+    end = time.perf_counter()
     execution_time = (end - start)*1000
     
     # # Setup figure and image for grid
@@ -305,8 +366,8 @@ if __name__ == "__main__":
     # ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
 
     # Setup figure and image for distance
-    fig_distance, ax_distance = plt.subplots(figsize=(10,10)) 
-    ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
+    # fig_distance, ax_distance = plt.subplots(figsize=(10,10)) 
+    # ax_distance.imshow(distance, cmap='hot', interpolation='nearest')
     
     # # Show the grid
     # ax_grid.imshow(grid_map, cmap='terrain', interpolation='nearest', vmin=-1, vmax=6)
