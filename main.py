@@ -12,7 +12,7 @@ CHARGE_TIME = 5
 
 def check_for_match(match):
     if match:
-        return match[0]
+        return int(match[0])
     else:
         return 0
     
@@ -196,48 +196,51 @@ def distance_to_charger(charger_pos, mission_pos, grid_map, distance, pred):
 
     return distance
 
-def path_to_end(graph, node, path, idx):
-    path.append(node['id'])
-    if node['next']:
-        idx += 1
-        path_to_end(graph, graph[idx], path, idx)
-        
-    return path
-
-def find_shortest_path_energy(max_cap, init_cap, total_cost, graph, mission):
-    openQueue = []
-    closedQueue = []
+def find_shortest_path_energy(max_cap, init_cap, total_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission):
+    queue = []
     path = []
-
-    idx = 0
-    openQueue.append(graph[idx])
-    graph[idx]['curr_cap'] = init_cap
-    graph[idx]['end'] = total_cost
+    curr_cap = [0] * len(mission)
+    curr_cap[0] = init_cap
     
-    while openQueue:
+    # No need to add charging, can do missions with initial capacity
+    if init_cap >= total_cost:
+        return mission
+    
+    # Find the nodes which can be reached with the current capacity
+    for i in range(len(mission)):
+        if curr_cap[i] > (next_cost[i] + charger_cost[i]):
+            curr_cap[i+1] = curr_cap[i] - next_cost[i]
+            queue.append(i)
+
+    while queue:
+        idx = queue[0]
         # Find the node with the lowest cost
         min_cost = 1000000
-        for node in openQueue:
-            id, next, CS, curr_cap, end_cost = node.items()
-            
-            if curr_cap > end_cost:
-                path = path_to_end(graph, node, path, idx)
-                print(path)
+        for i in queue:
+            # If the end can be reached, goto end
+            if curr_cap[i] > end_cost[i]:
+                path += [j for j in range(i, len(mission))]
+                # path = [mission[j] if isinstance(j, int) else j for j in path]
                 return path
             
-            print(node)
-            print(f"{node.items()}")
-            
-        
-        openQueue.pop(0)
-            
-    #         # Check if cost is lower than min_cost
-    #         if cost < min_cost:
-    #             min_cost = cost
-    #             current = node
-        
-    #     # Remove the node from the open queue
-    #     openQueue.remove(current)
+            # Calculate the cost
+            cost = curr_cap[i] - charger_cost[i] + max_cap + charger_next_cost[i]
+            if cost < min_cost:
+                min_cost = cost
+                current = i
+
+        # Move to charger
+        for i in range(idx, current):
+            path.append(i)
+        path += [current, 'CS']
+        curr_cap[current + 1] = max_cap - charger_next_cost[current]
+        # Check if the next node is the last, otherwise add it to the queue
+        if current + 1 <= len(mission):
+            queue = [current + 1]
+        else:
+            # path = [mission[j] if isinstance(j, int) else j for j in path]
+            return path
+
 
 def find_path(start_pos, end_pos, path, pred):
     x, y = end_pos
@@ -323,6 +326,7 @@ if __name__ == "__main__":
 
     if CS_positions:
         CS_position = CS_positions[0]
+        mission = missions[0]
         # ----------------------------------------
         # Find the distance to the charger
         pred = {}
@@ -338,29 +342,42 @@ if __name__ == "__main__":
         # ----------------------------------------
         # Create graph for hauler with charger
         graph = []
-        for mission in missions:
-            for i,id in enumerate(mission):
-                try:
-                    
-                    next_node_cost = len(paths[i])
-                    charger_cost = (len(charger_paths[id]))
-                    charger_next_cost = len(charger_paths[mission[i+1]])
-                    
-                    graph.append({'id': id, 'next': next_node_cost, 'C': (charger_cost, charger_next_cost), 'end': 0, 'curr_cap':0})
-                except:
-                    graph.append({'id': id, 'next': None, 'C': (charger_cost, charger_next_cost), 'end': 0, 'curr_cap':0})
-        print(graph)
+        total_energy_cost = len(final_path[0]) * ENERGY_COST
+        prev_energy_cost = total_energy_cost
+        next_cost = []
+        end_cost = []
+        charger_cost = []
+        charger_next_cost = []
+        
+        for i,id in enumerate(mission):
+            try:
+                next_cost.append(len(paths[i]) * ENERGY_COST)
+                charger_cost.append(len(charger_paths[id]) * ENERGY_COST)
+                charger_next_cost.append(len(charger_paths[mission[i+1]]) * ENERGY_COST)
+                end_cost.append(prev_energy_cost)
+                prev_energy_cost -= next_cost[-1]
+            except:
+                continue
         
         # ----------------------------------------
         # Find the shortest path with energy
-        
-        total_energy_cost = len(final_paths[0]) * ENERGY_COST
-        find_shortest_path_energy(max_energy, initial_energy, total_energy_cost, graph, missions[0])
-        
+        charger_mission = find_shortest_path_energy(max_energy, initial_energy, total_energy_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission)
+        # Create the final path
+        if not charger_mission == mission:
+            for i,val in enumerate(charger_mission):
+                if val is 'CS':
+                    charger_paths[mission[i-1]].reverse()
+                    final_path[0] += (charger_paths[mission[i-1]])
+                    final_path[0] += (charger_paths[mission[i]])
+                else:
+                    final_path[0] += final_paths[0][i]
+                    if i is len(mission) - 1:
+                        break
+        final_path[0] = [hauler_positions[0]] + final_path[0]
     # Stop path finding
     end = time.perf_counter()
     execution_time = (end - start)*1000
-    
+    print(f"{execution_time = :.2f} ms")
     # # Setup figure and image for grid
     # fig_grid, ax_grid = plt.subplots(figsize=(10,10))
     # ax_grid.imshow(grid_map, cmap='hot', interpolation='nearest')
