@@ -86,7 +86,9 @@ def write_output(makespan, completion_times, execution_time, paths, file='output
                     x, y = path[i]
                     f.write(f',[{x + 1},{y + 1}]')
                 except:
-                    f.write(f',[0,0]')
+                    x, y = path[-1]
+                    f.write(f',[{x + 1},{y + 1}]')
+                    # f.write(f'[0,0]')
             f.write('\n')
 
 def astar(start, end, grid_map, distance, pred):
@@ -109,7 +111,7 @@ def astar(start, end, grid_map, distance, pred):
             # Get H cost (Manhattan distance) 
             cost += abs(end_x - x) + abs(end_y - y)
             # Get H cost (Euclidean distance)
-            # cost += np.sqrt((end_x - x)**2 + (end_y - y)**2)
+            cost += np.sqrt((end_x - x)**2 + (end_y - y)**2)
             
             # Check if cost is lower than min_cost
             if cost < min_cost:
@@ -221,7 +223,6 @@ def find_shortest_path_energy(max_cap, init_cap, total_cost, next_cost, end_cost
             if not can_reach_charger:
                 cost = 1000000
             
-            print(f"{i = }, {cost = }")
             if cost < min_cost:
                 min_cost = cost
                 current = i
@@ -326,7 +327,7 @@ if __name__ == "__main__":
         completion_times[hauler_id] = len(mission_path[hauler_id])
         
         mission_paths[hauler_id]  = paths.copy()
-        mission_path[hauler_id] = [hauler_positions[hauler_id]] + mission_path[hauler_id]
+        mission_path[hauler_id] = mission_path[hauler_id] # [hauler_positions[hauler_id]] + 
 
     if not CS_positions:
         final_path = mission_path.copy()
@@ -376,7 +377,7 @@ if __name__ == "__main__":
         # Find the shortest path with energy
         charger_mission = find_shortest_path_energy(max_energy, initial_energy, total_energy_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission)
         # Create the final path
-        print(f"{charger_mission = }")
+        # print(f"{charger_mission = }")
         mission_charger_path = []
         if not charger_mission == mission:
             for i,val in enumerate(charger_mission):
@@ -404,48 +405,51 @@ if __name__ == "__main__":
     # Hauler collision detection
     
     # Caclulate the total distance
-    completion_times = [len(path) for path in final_path]
+    completion_times = [len(path) - 1 for path in final_path]
     makespan = max(completion_times)
     
     if len(final_path) > 1:
         # Create makespan list with points
         makespan_path = [[]] * makespan
         for i in range(makespan):
+            # Get all the points
             points = []
             for id, path in enumerate(final_path):
-                
                 if not i < completion_times[id]:
                     continue
                 points.append(tuple(path[i]))
             
+            # Check for collisions
             set_points = set(points)
             while len(set_points) < len(points):
-                print(f"Collision at {i}")
+                # print(f"Collision at {i}")
                 min_span = 1000
                 for point in set_points:
                     for id, path in enumerate(final_path):
                         if point == tuple(path[i]):
-                            min_span = min(min_span, len(path))
-                        
-                print(f"{min_span = }")
-                min_id = completion_times.index(min_span)
+                            if len(path) < min_span:
+                                min_span = len(path)
+                                min_id = id
                 
-                print(f"{min_id = } {final_path[min_id][i-1] = }")
-                final_path[min_id].insert(i, final_path[min_id][i-1])
+                # print(f"{min_span = } {min_id = }")
+                collision_path = final_path[min_id]
+                halt_point = final_path[min_id][i-1]
+                
+                # print(f"{halt_point = }")
+                collision_path.insert(i, halt_point)
                 completion_times[min_id] += 1
                 
-                points[min_id] = tuple(final_path[min_id][i -1])
+                points[min_id] = tuple(halt_point)
                 set_points = set(points)
             makespan_path[i] = points.copy()
-        
+
     # Stop path finding
     end = time.perf_counter()
     execution_time = (end - start)*1000
     print(f"{execution_time = :.2f} ms")
     
-
         
-    write_output(makespan, completion_times, execution_time, final_path)
+    write_output(makespan + 1, completion_times, execution_time, final_path)
 
     import sanity_check
     sanity_check.main()
