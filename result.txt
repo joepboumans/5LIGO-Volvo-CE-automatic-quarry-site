@@ -1,0 +1,9 @@
+96
+3.000
+True
+True
+True
+True
+True
+True
+True
