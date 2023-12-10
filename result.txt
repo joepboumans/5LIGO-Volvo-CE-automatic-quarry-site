@@ -1,7 +1,7 @@
-96
-3.000
+47
+6.408
 True
-True
+False
 True
 True
 True

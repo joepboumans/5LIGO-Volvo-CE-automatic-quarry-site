@@ -86,8 +86,7 @@ def write_output(makespan, completion_times, execution_time, paths, file='output
                     x, y = path[i]
                     f.write(f',[{x + 1},{y + 1}]')
                 except:
-                    x, y = path[-1]
-                    f.write(f',[{x + 1},{y + 1}]')
+                    f.write(f',[0,0]')
             f.write('\n')
 
 def astar(start, end, grid_map, distance, pred):
@@ -351,7 +350,7 @@ if __name__ == "__main__":
             charger_next_paths[id] = path + [[CS_x, CS_y]]
         
         # ----------------------------------------
-        # Create graph for hauler with charger
+        # Create tables for energy caclulation
         total_energy_cost = len(mission_path[0]) * ENERGY_COST
         prev_energy_cost = total_energy_cost
         next_cost = []
@@ -401,14 +400,50 @@ if __name__ == "__main__":
         else:
             final_path = mission_path.copy()
     
+    #----------------------------------------
+    # Hauler collision detection
+    
+    # Caclulate the total distance
+    completion_times = [len(path) for path in final_path]
+    makespan = max(completion_times)
+    
+    if len(final_path) > 1:
+        # Create makespan list with points
+        makespan_path = [[]] * makespan
+        for i in range(makespan):
+            points = []
+            for id, path in enumerate(final_path):
+                
+                if not i < completion_times[id]:
+                    continue
+                points.append(tuple(path[i]))
+            
+            set_points = set(points)
+            while len(set_points) < len(points):
+                print(f"Collision at {i}")
+                min_span = 1000
+                for point in set_points:
+                    for id, path in enumerate(final_path):
+                        if point == tuple(path[i]):
+                            min_span = min(min_span, len(path))
+                        
+                print(f"{min_span = }")
+                min_id = completion_times.index(min_span)
+                
+                print(f"{min_id = } {final_path[min_id][i-1] = }")
+                final_path[min_id].insert(i, final_path[min_id][i-1])
+                completion_times[min_id] += 1
+                
+                points[min_id] = tuple(final_path[min_id][i -1])
+                set_points = set(points)
+            makespan_path[i] = points.copy()
+        
     # Stop path finding
     end = time.perf_counter()
     execution_time = (end - start)*1000
     print(f"{execution_time = :.2f} ms")
     
-    # Caclulate the total distance
-    path_len = [len(path) for path in final_path]
-    makespan = max(path_len)
+
         
     write_output(makespan, completion_times, execution_time, final_path)
 
