@@ -1,9 +1,14 @@
 import re
 import time
 import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib import colors
+from matplotlib import animation
 
 GRID_SIZE = 12
 WALL = -1
+ENERGY_COST = 10 * 5
+CHARGE_TIME = 5
 
 def check_for_match(match):
     if match:
@@ -58,7 +63,7 @@ def read_mission(file='mission.txt'):
             missions += [mission]
     return missions
 
-def write_output(makespan, completion_times, execution_time, path, file='output.txt'):
+def write_output(makespan, completion_times, execution_time, paths, file='output.txt'):
     with open(file, 'w') as f:
         f.write("//Quantitative values\n")
         f.write(f'{makespan - 1}\t//Makespan\n')
@@ -76,12 +81,14 @@ def write_output(makespan, completion_times, execution_time, path, file='output.
             f.write(f'{i}')
 
             # Get the pos of each hauler or the last pos
-            try:
-                x, y = path[i]
-                f.write(f',[{x + 1},{y + 1}]')
-            except:
-                x, y = path[-1]
-                f.write(f',[{x + 1},{y + 1}]')
+            for path in paths:
+                try:
+                    x, y = path[i]
+                    f.write(f',[{x + 1},{y + 1}]')
+                except:
+                    x, y = path[-1]
+                    f.write(f',[{x + 1},{y + 1}]')
+                    # f.write(f'[0,0]')
             f.write('\n')
 
 def astar(start, end, grid_map, distance, pred):
@@ -103,7 +110,7 @@ def astar(start, end, grid_map, distance, pred):
             cost = distance[x,y]
             # Get H cost (Manhattan distance) 
             cost += abs(end_x - x) + abs(end_y - y)
-            
+            cost += np.sqrt((end_x - x)**2 + (end_y - y)**2)
             # Check if cost is lower than min_cost
             if cost < min_cost:
                 min_cost = cost
@@ -146,7 +153,6 @@ def astar(start, end, grid_map, distance, pred):
             
     return distance
 
-
 def find_path(start_pos, end_pos, path, pred):
     x, y = end_pos
     x_start, y_start = start_pos
@@ -161,22 +167,28 @@ def find_path(start_pos, end_pos, path, pred):
     path.reverse()
     return path
 
-def part1(config, mission):
-    # Read configuration files
+def part3(config, mission):
     nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = config
-    mission = mission[0]
+    missions = mission
+    missions_pos = [[] for i in range(len(missions))]
     
+    unique_missions = {}
     # Convert mission to coordinates
-    mission_pos = [()] * len(mission)
-    for i, pos in enumerate(mission):
-        match pos[0]:
-            case 'L':
-                mission_pos[i] = LP_positions[int(pos[1])-1]
-            case 'U':
-                mission_pos[i] = ULP_positions[int(pos[1])-1]
-            case _:
-                print("Error: Mission not found")
+    for hauler_id, mission in enumerate(missions):
+        mission_pos = [()] * len(mission)
+        for i, pos in enumerate(mission):
+            match pos[0]:
+                case 'L':
+                    mission_pos[i] = LP_positions[int(pos[1])-1]
+                case 'U':
+                    mission_pos[i] = ULP_positions[int(pos[1])-1]
+                case _:
+                    print("Error: Mission not found")
                     
+        missions_pos[hauler_id] = mission_pos
+    for mission, mission_pos in zip(missions, missions_pos):
+        for id, pos in zip(mission, mission_pos):
+            unique_missions[id] = pos
 
     # Create map and distance, pred for path finding
     grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
@@ -191,51 +203,97 @@ def part1(config, mission):
     # Reset distance after each found point
     clean_distance = distance.copy()
     
-    final_path = []
-    mission_path = []
-    mission_paths = [] 
-    completion_time = 0
+    final_path = [[]] * len(missions)
+    mission_path = [[]] * len(missions)
+    mission_paths = [[]] * len(missions)
+    completion_times = [0] * len(missions)
     
     # ----------------------------------------
     # Start path finding
     start = time.perf_counter()
+    # Get the mission for each hauler
+    for hauler_id, mission in enumerate(missions_pos):
+        paths = []
+        start_pos = hauler_positions[hauler_id]
+        # Get the mission positions for the hauler
+        for next_pos in mission:
+            # Use A* to find the path
+            last_dist = astar(start_pos, next_pos, grid_map, distance, pred)
+            # Find the path
+            path =[]
+            path = find_path(start_pos, next_pos, path, pred)
+            if start_pos == hauler_positions[hauler_id]:
+                path.insert(0, start_pos)
+            # Add path to paths and update start_pos
+            start_pos = next_pos
+            paths.append(path)
+            mission_path[hauler_id] = mission_path[hauler_id]  + path
+            # Reset distance
+            distance = clean_distance.copy()
+        
+        # Complete the mission
+        completion_times[hauler_id] = len(mission_path[hauler_id])
+        
+        mission_paths[hauler_id]  = paths.copy()
+        mission_path[hauler_id] = mission_path[hauler_id] # [hauler_positions[hauler_id]] + 
 
-    paths = []
-    start_pos = hauler_positions[0]
-    # Get the mission positions for the hauler
-    for next_pos in mission_pos:
-        # Use A* to find the path
-        last_dist = astar(start_pos, next_pos, grid_map, distance, pred)
-        # Find the path
-        path =[]
-        path = find_path(start_pos, next_pos, path, pred)
-        if start_pos == hauler_positions[0]:
-            path.insert(0, start_pos)
-        # Add path to paths and update start_pos
-        start_pos = next_pos
-        paths.append(path)
-        mission_path = mission_path  + path
-        # Reset distance
-        distance = clean_distance.copy()
+    final_path = mission_path.copy()
+
     
-    # Complete the mission
-    completion_time = len(mission_path)
-    
-    mission_paths  = paths.copy()
-    final_path = mission_path
+    #----------------------------------------
+    # Hauler collision detection
     
     # Caclulate the total distance
-    completion_time = [len(final_path) - 1]
-    makespan = max(completion_time)
+    completion_times = [len(path) - 1 for path in final_path]
+    makespan = max(completion_times)
+    
+    if len(final_path) > 1:
+        # Create makespan list with points
+        makespan_path = [[]] * makespan
+        for i in range(makespan):
+            # Get all the points
+            points = []
+            for id, path in enumerate(final_path):
+                if not i < completion_times[id]:
+                    continue
+                points.append(tuple(path[i]))
+            
+            # Check for collisions
+            set_points = set(points)
+            while len(set_points) < len(points):
+                # print(f"Collision at {i}")
+                min_span = 1000
+                for point in set_points:
+                    for id, path in enumerate(final_path):
+                        if point == tuple(path[i]):
+                            if len(path) < min_span:
+                                min_span = len(path)
+                                min_id = id
+                
+                # print(f"{min_span = } {min_id = }")
+                collision_path = final_path[min_id]
+                halt_point = final_path[min_id][i-1]
+                
+                # print(f"{halt_point = }")
+                collision_path.insert(i, halt_point)
+                completion_times[min_id] += 1
+                
+                points[min_id] = tuple(halt_point)
+                set_points = set(points)
+            makespan_path[i] = points.copy()
 
     # Stop path finding
     end = time.perf_counter()
     execution_time = (end - start)*1000
     print(f"{execution_time = :.2f} ms")
-        
-    write_output(makespan + 1, completion_time, execution_time, final_path)
     
-if __name__ == "__main__":
+    makespan = max(completion_times)
+    write_output(makespan + 1, completion_times, execution_time, final_path)
+    
+if __name__ == '__main__':
+    # Read the config
     config = read_config()
-    mission = read_mission()
-    part1(config, mission)
+    # Read the mission
+    missions = read_mission()
+    
+    part3(config, missions)

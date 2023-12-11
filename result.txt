@@ -1,9 +1,9 @@
-168
-3.177
+297
+3.835
 True
 True
 True
 True
 True
-True
+False
 True

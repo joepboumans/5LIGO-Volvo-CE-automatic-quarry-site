@@ -211,8 +211,7 @@ def find_shortest_path_energy(max_cap, init_cap, total_cost, next_cost, end_cost
             # If the end can be reached, goto end
             if curr_cap[i] >= end_cost[i] and i <= len(mission):
                 path += [j for j in range(i, len(mission))]
-                print(f"{curr_cap = }")
-                return path
+                return path, curr_cap
             
             # Calculate the cost
             recharger_cost = max_cap * int((end_cost[i] - curr_cap[i])/ max_cap)
@@ -236,13 +235,11 @@ def find_shortest_path_energy(max_cap, init_cap, total_cost, next_cost, end_cost
             path.append(i)
         path += [current, 'CS']
         curr_cap[current + 1] = max_cap - charger_next_cost[current]
-        print(f"{curr_cap[current + 1] = } {curr_cap[current] = } {current = } {charger_cost[current] = }")
         # Check if the next node is the last, otherwise add it to the queue
         if current + 1 <= len(mission):
             queue = [current + 1]
         else:
-            print(f"{curr_cap = }")
-            return path
+            return path, curr_cap
 
 
 def find_path(start_pos, end_pos, path, pred):
@@ -259,10 +256,10 @@ def find_path(start_pos, end_pos, path, pred):
     path.reverse()
     return path
 
-if __name__ == "__main__":
+def part2(config, mission):
     # Read configuration files
-    nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
-    mission = read_mission()[0]
+    nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = config
+    mission = mission[0]
     
     unique_missions = {}
     # Convert mission to coordinates
@@ -278,6 +275,7 @@ if __name__ == "__main__":
                 
     for id, pos in zip(mission, mission_pos):
         unique_missions[id] = pos
+    unique_missions['IH'] = hauler_positions[0]
 
     # Create map and distance, pred for path finding
     grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
@@ -358,7 +356,7 @@ if __name__ == "__main__":
             try:
                 next_cost.append((len(paths[i]) + 1) * ENERGY_COST)
                 charger_cost.append((len(charger_paths[id]) + 1) * ENERGY_COST)
-                charger_next_cost.append((len(charger_paths[mission[i+1]]) + 1) * ENERGY_COST)
+                charger_next_cost.append((len(charger_next_paths[mission[i+1]]) + 1) * ENERGY_COST)
                 end_cost.append(prev_energy_cost)
                 prev_energy_cost -= next_cost[-1]
             except:
@@ -372,10 +370,14 @@ if __name__ == "__main__":
         # Find the shortest path with energy
         print(f"{mission = }")
         print(f"{next_cost = }\n{end_cost = }\n{charger_cost = }\n{charger_next_cost = }")
-        charger_mission = find_shortest_path_energy(max_energy, initial_energy, total_energy_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission)
+        charger_mission, curr_cap = find_shortest_path_energy(max_energy, initial_energy, total_energy_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission)
         # Create the final path
         print(f"{charger_mission = }")
-        print(f"{total_energy_cost = }")
+        print(f"{total_energy_cost = } {curr_cap = }")
+        cost = []
+        for cap, charger in zip(curr_cap, charger_cost):
+            cost.append(cap - charger)
+        print(f"{cost = }")
         mission_charger_path = []
         if not charger_mission == mission:
             for i,val in enumerate(charger_mission):
@@ -383,9 +385,9 @@ if __name__ == "__main__":
                     if val == 'CS':
                         # Add charging time, in total 5 seconds
                         mission_charger_path += charger_next_paths[mission[i-1]][1:]
-                        print(f"Recharging at {mission[i-1]} with {len(mission_charger_path)}")
-                        print(f"{charger_next_paths[mission[i-1]] = }")
-                        print(f"{charger_paths[mission[i]] = }")
+                        # print(f"Recharging at {mission[i-1]} with {len(mission_charger_path)}")
+                        # print(f"{charger_next_paths[mission[i-1]] = }")
+                        # print(f"{charger_paths[mission[i]] = }")
                         mission_charger_path += [CS_position]
                         mission_charger_path += [CS_position]
                         mission_charger_path += [CS_position]
@@ -411,5 +413,8 @@ if __name__ == "__main__":
         
     write_output(makespan, [completion_times], execution_time, [final_path])
 
-    import sanity_check
-    sanity_check.main()
+
+if __name__ == "__main__":
+    config = read_config()
+    mission = read_mission()
+    part2(config, mission)
