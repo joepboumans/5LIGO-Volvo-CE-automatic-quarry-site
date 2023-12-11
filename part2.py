@@ -110,8 +110,6 @@ def astar(start, end, grid_map, distance, pred):
             cost = distance[x,y]
             # Get H cost (Manhattan distance) 
             cost += abs(end_x - x) + abs(end_y - y)
-            # Get H cost (Euclidean distance)
-            # cost += np.sqrt((end_x - x)**2 + (end_y - y)**2)
             
             # Check if cost is lower than min_cost
             if cost < min_cost:
@@ -213,11 +211,12 @@ def find_shortest_path_energy(max_cap, init_cap, total_cost, next_cost, end_cost
             # If the end can be reached, goto end
             if curr_cap[i] >= end_cost[i] and i <= len(mission):
                 path += [j for j in range(i, len(mission))]
+                print(f"{curr_cap = }")
                 return path
             
             # Calculate the cost
             recharger_cost = max_cap * int((end_cost[i] - curr_cap[i])/ max_cap)
-            cost = charger_cost[i] + recharger_cost - (max_cap - (charger_next_cost[i] - curr_cap[i]))
+            cost = charger_cost[i] + recharger_cost + end_cost[i]
             
             can_reach_charger = int(curr_cap[i]/ENERGY_COST) > int(charger_cost[i]/ENERGY_COST + 1)
             if not can_reach_charger:
@@ -230,17 +229,19 @@ def find_shortest_path_energy(max_cap, init_cap, total_cost, next_cost, end_cost
             can_reach_next = int(curr_cap[i]/ENERGY_COST) > int(next_cost[i]/ENERGY_COST + 1)
             if can_reach_next and not i+1 in queue and i+2 < len(mission):
                 queue.append(i+1)
-                curr_cap[i+1] = curr_cap[i] - next_cost[i]
+                curr_cap[i+1] = curr_cap[i] - next_cost[i] - ENERGY_COST
                 
         # Move to charger
         for i in range(start, current):
             path.append(i)
         path += [current, 'CS']
         curr_cap[current + 1] = max_cap - charger_next_cost[current]
+        print(f"{curr_cap[current + 1] = } {curr_cap[current] = } {current = } {charger_cost[current] = }")
         # Check if the next node is the last, otherwise add it to the queue
         if current + 1 <= len(mission):
             queue = [current + 1]
         else:
+            print(f"{curr_cap = }")
             return path
 
 
@@ -261,26 +262,22 @@ def find_path(start_pos, end_pos, path, pred):
 if __name__ == "__main__":
     # Read configuration files
     nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
-    missions = read_mission()
-    missions_pos = [[] for i in range(len(missions))]
+    mission = read_mission()[0]
     
     unique_missions = {}
     # Convert mission to coordinates
-    for hauler_id, mission in enumerate(missions):
-        mission_pos = [()] * len(mission)
-        for i, pos in enumerate(mission):
-            match pos[0]:
-                case 'L':
-                    mission_pos[i] = LP_positions[int(pos[1])-1]
-                case 'U':
-                    mission_pos[i] = ULP_positions[int(pos[1])-1]
-                case _:
-                    print("Error: Mission not found")
-                    
-        missions_pos[hauler_id] = mission_pos
-    for mission, mission_pos in zip(missions, missions_pos):
-        for id, pos in zip(mission, mission_pos):
-            unique_missions[id] = pos
+    mission_pos = [()] * len(mission)
+    for i, pos in enumerate(mission):
+        match pos[0]:
+            case 'L':
+                mission_pos[i] = LP_positions[int(pos[1])-1]
+            case 'U':
+                mission_pos[i] = ULP_positions[int(pos[1])-1]
+            case _:
+                print("Error: Mission not found")
+                
+    for id, pos in zip(mission, mission_pos):
+        unique_missions[id] = pos
 
     # Create map and distance, pred for path finding
     grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
@@ -295,46 +292,44 @@ if __name__ == "__main__":
     # Reset distance after each found point
     clean_distance = distance.copy()
     
-    final_path = [[]] * len(missions)
-    mission_path = [[]] * len(missions)
-    mission_paths = [[]] * len(missions)
-    completion_times = [0] * len(missions)
+    final_path = []
+    mission_path = []
+    mission_paths = []
+    completion_times = 0
     
     # ----------------------------------------
     # Start path finding
     start = time.perf_counter()
     # Get the mission for each hauler
-    for hauler_id, mission in enumerate(missions_pos):
-        paths = []
-        start_pos = hauler_positions[hauler_id]
-        # Get the mission positions for the hauler
-        for next_pos in mission:
-            # Use A* to find the path
-            last_dist = astar(start_pos, next_pos, grid_map, distance, pred)
-            # Find the path
-            path =[]
-            path = find_path(start_pos, next_pos, path, pred)
-            if start_pos == hauler_positions[hauler_id]:
-                path.insert(0, start_pos)
-            # Add path to paths and update start_pos
-            start_pos = next_pos
-            paths.append(path)
-            mission_path[hauler_id] = mission_path[hauler_id]  + path
-            # Reset distance
-            distance = clean_distance.copy()
-        
-        # Complete the mission
-        completion_times[hauler_id] = len(mission_path[hauler_id])
-        
-        mission_paths[hauler_id]  = paths.copy()
-        mission_path[hauler_id] = mission_path[hauler_id] # [hauler_positions[hauler_id]] + 
+    paths = []
+    start_pos = hauler_positions[0]
+    # Get the mission positions for the hauler
+    for next_pos in mission_pos:
+        # Use A* to find the path
+        last_dist = astar(start_pos, next_pos, grid_map, distance, pred)
+        # Find the path
+        path =[]
+        path = find_path(start_pos, next_pos, path, pred)
+        if start_pos == hauler_positions[0]:
+            path.insert(0, start_pos)
+        # Add path to paths and update start_pos
+        start_pos = next_pos
+        paths.append(path)
+        mission_path = mission_path  + path
+        # Reset distance
+        distance = clean_distance.copy()
+    
+    # Complete the mission
+    completion_times = [len(mission_path)]
+    
+    mission_paths  = paths.copy()
+    mission_path = mission_path
 
     if not CS_positions:
         final_path = mission_path.copy()
     else:
         CS_position = CS_positions[0]
-        mission = missions[0]
-        paths = mission_paths[0]
+        paths = mission_paths
         # ----------------------------------------
         # Find the distance to the charger
         pred = {}
@@ -352,7 +347,7 @@ if __name__ == "__main__":
         
         # ----------------------------------------
         # Create tables for energy caclulation
-        total_energy_cost = len(mission_path[0]) * ENERGY_COST
+        total_energy_cost = (len(mission_path) + 1) * ENERGY_COST
         prev_energy_cost = total_energy_cost
         next_cost = []
         end_cost = []
@@ -361,9 +356,9 @@ if __name__ == "__main__":
         
         for i,id in enumerate(mission):
             try:
-                next_cost.append(len(paths[i]) * ENERGY_COST)
-                charger_cost.append(len(charger_paths[id]) * ENERGY_COST)
-                charger_next_cost.append(len(charger_paths[mission[i+1]]) * ENERGY_COST)
+                next_cost.append((len(paths[i]) + 1) * ENERGY_COST)
+                charger_cost.append((len(charger_paths[id]) + 1) * ENERGY_COST)
+                charger_next_cost.append((len(charger_paths[mission[i+1]]) + 1) * ENERGY_COST)
                 end_cost.append(prev_energy_cost)
                 prev_energy_cost -= next_cost[-1]
             except:
@@ -375,9 +370,12 @@ if __name__ == "__main__":
         
         # ----------------------------------------
         # Find the shortest path with energy
+        print(f"{mission = }")
+        print(f"{next_cost = }\n{end_cost = }\n{charger_cost = }\n{charger_next_cost = }")
         charger_mission = find_shortest_path_energy(max_energy, initial_energy, total_energy_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission)
         # Create the final path
-        # print(f"{charger_mission = }")
+        print(f"{charger_mission = }")
+        print(f"{total_energy_cost = }")
         mission_charger_path = []
         if not charger_mission == mission:
             for i,val in enumerate(charger_mission):
@@ -385,63 +383,25 @@ if __name__ == "__main__":
                     if val == 'CS':
                         # Add charging time, in total 5 seconds
                         mission_charger_path += charger_next_paths[mission[i-1]][1:]
-                        # print(f"Recharging at {mission[i-1]} with {len(mission_charger_path)}")
-                        # print(f"{charger_next_paths[mission[i-1]] = }")
-                        # print(f"{charger_paths[mission[i]] = }")
+                        print(f"Recharging at {mission[i-1]} with {len(mission_charger_path)}")
+                        print(f"{charger_next_paths[mission[i-1]] = }")
+                        print(f"{charger_paths[mission[i]] = }")
                         mission_charger_path += [CS_position]
                         mission_charger_path += [CS_position]
                         mission_charger_path += [CS_position]
                         
                         mission_charger_path += charger_paths[mission[i]]
                     else:
-                        mission_charger_path += mission_paths[0][i]
+                        mission_charger_path += mission_paths[i]
                 except:
                     break
-            final_path[0] = mission_charger_path
+            final_path = mission_charger_path
         else:
             final_path = mission_path.copy()
     
-    #----------------------------------------
-    # Hauler collision detection
-    
     # Caclulate the total distance
-    completion_times = [len(path) - 1 for path in final_path]
-    makespan = max(completion_times)
-    
-    if len(final_path) > 1:
-        # Create makespan list with points
-        makespan_path = [[]] * makespan
-        for i in range(makespan):
-            # Get all the points
-            points = []
-            for id, path in enumerate(final_path):
-                if not i < completion_times[id]:
-                    continue
-                points.append(tuple(path[i]))
-            
-            # Check for collisions
-            set_points = set(points)
-            while len(set_points) < len(points):
-                # print(f"Collision at {i}")
-                min_span = 1000
-                for point in set_points:
-                    for id, path in enumerate(final_path):
-                        if point == tuple(path[i]):
-                            if len(path) < min_span:
-                                min_span = len(path)
-                                min_id = id
-                
-                # print(f"{min_span = } {min_id = }")
-                collision_path = final_path[min_id]
-                halt_point = final_path[min_id][i-1]
-                
-                # print(f"{halt_point = }")
-                collision_path.insert(i, halt_point)
-                completion_times[min_id] += 1
-                
-                points[min_id] = tuple(halt_point)
-                set_points = set(points)
-            makespan_path[i] = points.copy()
+    completion_times = len(final_path) - 1
+    makespan = completion_times + 1
 
     # Stop path finding
     end = time.perf_counter()
@@ -449,7 +409,7 @@ if __name__ == "__main__":
     print(f"{execution_time = :.2f} ms")
     
         
-    write_output(makespan + 1, completion_times, execution_time, final_path)
+    write_output(makespan, [completion_times], execution_time, [final_path])
 
     import sanity_check
     sanity_check.main()
