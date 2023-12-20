@@ -110,7 +110,7 @@ def astar(start, end, grid_map, distance, pred):
             cost = distance[x,y]
             # Get H cost (Manhattan distance) 
             cost += abs(end_x - x) + abs(end_y - y)
-            cost += np.sqrt((end_x - x)**2 + (end_y - y)**2)
+            # cost += np.sqrt((end_x - x)**2 + (end_y - y)**2)
             # Check if cost is lower than min_cost
             if cost < min_cost:
                 min_cost = cost

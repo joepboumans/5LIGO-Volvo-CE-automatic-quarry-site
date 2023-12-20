@@ -139,7 +139,8 @@ def astar(start, end, grid_map, distance, pred):
                 distance[x,y] = distance[current] + 1
                 pred[x,y] = current
             else:
-                # Check if the new path is shorter
+                # Check if the new path 
+                # \bis shorter
                 if distance[current] + 1 < distance[x,y]:
                     distance[x,y] = distance[current] + 1
                     pred[x,y] = current
@@ -157,7 +158,6 @@ def find_path(start_pos, end_pos, path, pred):
         x, y = pos
     # Add last and start point
     path.append([x,y])
-    # path.append([x_start,y_start])
     path.reverse()
     return path
 
