@@ -192,6 +192,23 @@ def distance_to_charger(charger_pos, mission_pos, grid_map, distance, pred):
 
     return distance
 
+def dfs(path, node, score, costs, end_node):
+    score += costs[node]
+    path.append(node)
+    if end_node == node:
+        return score
+    
+    charge_score = dfs(path, charge_node, score, costs, end_node)
+    score = dfs(path, next_node, score, costs, end_node)
+    return min(score, charge_score)
+    
+def dfs_energy_path(max_cap, init_cap, total_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission):
+    """ Finds the path via DFS with a heuristic"""
+    
+    adjecency_list = {}
+    
+    
+    
 def find_shortest_path_energy(max_cap, init_cap, total_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission):
     queue = []
     path = []
@@ -380,9 +397,9 @@ def part2(config, mission):
     
     # ----------------------------------------
     # Find the shortest path with energy
-    charger_mission = find_shortest_path_energy(max_energy, initial_energy, total_energy_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission)
+    charger_mission = dfs_energy_path(max_energy, initial_energy, total_energy_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission)
     # Create the final path
-    # print(f"{charger_mission = }")
+    print(f"{charger_mission = }")
     mission_charger_path = []
     if not charger_mission == mission:
         for i,val in enumerate(charger_mission):
