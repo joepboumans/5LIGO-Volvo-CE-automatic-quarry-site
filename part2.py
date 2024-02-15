@@ -372,28 +372,46 @@ def part2(config, mission):
         path.reverse()
         charger_next_paths[id] = path + [[CS_x, CS_y]]
     
+    # ---------------------------------------
+    # Create unique nodes for DFS
+    print(mission)
+    mission_count = []
+    for m in mission:
+        if not m in mission_count:
+            mission_count.append(m)
+            continue
+        mission_count.append(m + "_%d" % mission_count.count(m))
+    mission = mission_count
+    print(mission)
     # ----------------------------------------
     # Create tables for energy caclulation
     total_energy_cost = len(mission_path) * ENERGY_COST
-    prev_energy_cost = total_energy_cost
     next_cost = []
-    end_cost = []
-    charger_cost = []
-    charger_next_cost = []
+    node2cs_cost = []
+    cs2next_cost = []
+    adj_list = {}
     
     for i,id in enumerate(mission):
+        id = id[:2]
         try:
-            next_cost.append(len(paths[i]) * ENERGY_COST)
-            charger_cost.append(len(charger_paths[id]) * ENERGY_COST)
-            charger_next_cost.append(len(charger_paths[mission[i+1]]) * ENERGY_COST)
-            end_cost.append(prev_energy_cost)
-            prev_energy_cost -= next_cost[-1]
+            next_cost.append(len(paths[i]))
+            node2cs_cost.append(len(charger_paths[id]))
+            cs2next_cost.append(len(charger_paths[mission[i+1]]))
         except:
-            next_cost.append(len(paths[i]) * ENERGY_COST)
-            charger_cost.append(len(charger_paths[id]) * ENERGY_COST)
-            charger_next_cost.append(0)
-            end_cost.append(prev_energy_cost)
+            next_cost.append(len(paths[i]))
+            node2cs_cost.append(len(charger_paths[id]))
+            cs2next_cost.append(0)
             continue
+    #------------------------------ 
+    # Create adj list
+    adj_list = {}
+    for i,m in enumerate(mission):
+        if m == mission[-1]:
+            break
+        adj_list[m] = [(mission[i + 1], next_cost[i]),('CS_' + m, node2cs_cost[i])]
+        adj_list['CS_' + m] = [(mission[i + 1], cs2next_cost[i])]
+    print(adj_list)
+    exit()
     
     # ----------------------------------------
     # Find the shortest path with energy
