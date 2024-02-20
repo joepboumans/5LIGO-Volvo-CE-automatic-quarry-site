@@ -330,26 +330,29 @@ def part2(config, mission):
             id = id[:2]
             
             if i == len(mission) - 1:
-                next_cost.append(-1)
+                next_cost.append(0)
                 node2cs_cost.append(float('inf'))
                 cs2next_cost.append(float('inf'))
                 continue
             else:
-                next_cost.append(len(paths[i]) + 1)
+                next_cost.append(len(paths[i]) - 1)
                 # print(f'{next_cost[i] = }')
-                node2cs_cost.append(len(charger_paths[id]))
-                cs2next_cost.append(len(charger_paths[mission[i+1][:2]]))
+                node2cs_cost.append(len(charger_paths[id]) - 1)
+                cs2next_cost.append(len(charger_paths[mission[i+1][:2]]) - 1)
 
-        # sum = 0
-        # for i,nc in enumerate(next_cost):
-        #     sum += nc * ENERGY_COST
-        #     print(f'{i}:{nc} {nc*ENERGY_COST} {node2cs_cost[i] * ENERGY_COST} {sum =  }')
+        sum = 0
+        for i,nc in enumerate(next_cost):
+            sum += nc * ENERGY_COST
+            print(f'{i}:{nc} {nc*ENERGY_COST} {node2cs_cost[i] * ENERGY_COST} {sum =  }')
         #------------------------------ 
         # Create adj list
         adj_list = {}
         for i,m in enumerate(mission):
             if m == mission[-1]:
                 break
+            if i == 0:
+               adj_list[m] = [(mission[i + 1], next_cost[i])]
+               continue
             adj_list[m] = [(mission[i + 1], next_cost[i]),('CS_' + m, node2cs_cost[i])]
             adj_list['CS_' + m] = [(mission[i + 1], cs2next_cost[i])]
         # print(adj_list)
@@ -357,8 +360,8 @@ def part2(config, mission):
         dfs = DFS(max_energy, adj_list, mission[-1])
         dfs.run(mission[0], next_cost[0], initial_energy, [], 0)
 
-        # print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
-        # print(f'{dfs.iterations = }')
+        print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
+        print(f'{dfs.iterations = }')
         charger_mission = dfs.min_path
         # Create the final path
         # print(f"{charger_mission = }")
@@ -376,7 +379,7 @@ def part2(config, mission):
                 next_mission = mission[i - num_cs + 1][:2]
 
                 # Add charging time, in total 5 seconds
-                mission_charger_path += charger_next_paths[curr_mission]
+                mission_charger_path += charger_next_paths[curr_mission][1:]
                 mission_charger_path += [CS_position]
                 mission_charger_path += [CS_position]
                 mission_charger_path += [CS_position]
@@ -400,8 +403,14 @@ def part2(config, mission):
     end = time.perf_counter()
     execution_time = (end - start)*1000
     print(f"{execution_time = :.2f} ms")
+    print(f"{makespan = }")
     
         
+    for i in range(len(final_path)):
+        if i < 1:
+            continue
+        if final_path[i] == final_path[i - 1]:
+            print(f'{i}Equal {final_path[i]}')
     write_output(makespan, [completion_times], execution_time, [final_path])
 
 

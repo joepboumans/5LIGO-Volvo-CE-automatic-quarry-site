@@ -25,15 +25,15 @@ class DFS():
         score += next_cost
         cap -= next_cost * ENERGY_COST
 
-        if score > self.min_score:
-            # print(f'Not over min score {next_cost = }, {cap = }, {node = }, {score = } {path = }')
-            return (path, float('inf'))
+        # if score > self.min_score:
+        #     # print(f'Not over min score {next_cost = }, {cap = }, {node = }, {score = } {path = }')
+        #     return (path, float('inf'))
         
         if node == self.end_node:
             if score < self.min_score:
                 self.min_score = score
                 self.min_path = path.copy()
-                # print(f'Smaller scored path found! {self.min_score = }\n {self.min_path = }\n{cap = }')
+                print(f'Smaller scored path found! {self.min_score = }\n {self.min_path = }\n{cap = }')
             return (path, score)
         
         adj_paths = []
