@@ -60,7 +60,8 @@ def read_mission(file='mission.txt'):
 
 
 if __name__ == "__main__":
-    input_path = "Part2/1-Medium/8/2_"
+    # input_path = "Part2/1-Medium/8/2_"
+    input_path = ""
     if input_path != "":
         shutil.copyfile(input_path + "mission.txt", "mission.txt")
         shutil.copyfile(input_path + "config.txt", "config.txt")
@@ -81,5 +82,5 @@ if __name__ == "__main__":
         print("Part 3")
         part3(config, mission)
 
-    import sanity_check
-    sanity_check.main()
+    # import sanity_check
+    # sanity_check.main()
