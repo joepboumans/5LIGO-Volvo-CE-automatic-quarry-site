@@ -1,9 +1,9 @@
-89
-5.095
-True
-False
+70
+5.041
 True
 True
 True
-False
+True
+True
+True
 True

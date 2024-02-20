@@ -301,10 +301,11 @@ def part2(config, mission):
             path.reverse()
             charger_next_paths[id] = path + [[CS_x, CS_y]]
         
+        print(f'{charger_paths = }')
+        print(f'{charger_next_paths = }')
         # ---------------------------------------
         # Create unique nodes for DFS
         mission.insert(0, 'IH')
-        print(f'precount {mission = }')
         mission_count = []
         count_list = []
         for m in mission:
@@ -323,7 +324,6 @@ def part2(config, mission):
         cs2next_cost = []
         adj_list = {}
 
-        print(f'{charger_next_paths = }')
         
         for i,id in enumerate(mission):
             # print(f'{i}:{id = }')
@@ -335,7 +335,6 @@ def part2(config, mission):
                 cs2next_cost.append(float('inf'))
                 continue
             else:
-                # COSTS ARE NOT CALCULATED CORRECTLY 
                 next_cost.append(len(paths[i]) + 1)
                 print(f'{next_cost[i] = }')
                 node2cs_cost.append(len(charger_paths[id]))
@@ -353,7 +352,7 @@ def part2(config, mission):
                 break
             adj_list[m] = [(mission[i + 1], next_cost[i]),('CS_' + m, node2cs_cost[i])]
             adj_list['CS_' + m] = [(mission[i + 1], cs2next_cost[i])]
-        print(adj_list)
+        # print(adj_list)
 
         dfs = DFS(max_energy, adj_list, mission[-1])
         dfs.run(mission[0], next_cost[0], initial_energy, [], 0)
@@ -366,24 +365,31 @@ def part2(config, mission):
         mission_charger_path = []
         num_cs = 0
         for i,val in enumerate(charger_mission):
+            if i == len(charger_mission) - 1:
+                break
+            
             if 'CS' in val:
-                num_cs += 1
-                prev_mission = mission[i-1][:2]
-                curr_mission = mission[i][:2]
+                continue
+
+            if 'CS' in charger_mission[i + 1]:
+                curr_mission = mission[i - num_cs][:2]
+                next_mission = mission[i - num_cs + 1][:2]
+
                 # Add charging time, in total 5 seconds
-                mission_charger_path += charger_next_paths[prev_mission][1:]
-                print(f"Recharging at {prev_mission} with {len(mission_charger_path)} or {len(mission_charger_path * ENERGY_COST)}")
-                print(f"{charger_next_paths[prev_mission] = }")
-                print(f"{charger_paths[curr_mission] = }")
+                mission_charger_path += charger_next_paths[curr_mission]
                 mission_charger_path += [CS_position]
                 mission_charger_path += [CS_position]
                 mission_charger_path += [CS_position]
-                
-                mission_charger_path += charger_paths[curr_mission]
+                mission_charger_path += charger_paths[next_mission]
+                num_cs += 1
+
+                # print(f"Recharging at {curr_mission} with {len(mission_charger_path)} or {len(mission_charger_path * ENERGY_COST)} towards {next_mission = }")
+                # print(f"{charger_next_paths[curr_mission] = }")
+                # print(f"{charger_paths[next_mission] = }")
             else:
-                if i == len(charger_mission) - 1:
-                    break
                 mission_charger_path += paths[i - num_cs]
+
+            # print(f'{mission_charger_path = }')
         final_path = mission_charger_path
     
     # Caclulate the total distance
