@@ -1,4 +1,5 @@
 import re
+import shutil
 
 from part1 import part1
 from part2 import part2
@@ -59,6 +60,10 @@ def read_mission(file='mission.txt'):
 
 
 if __name__ == "__main__":
+    input_path = "Part2/1-Medium/8/2_"
+    if input_path != "":
+        shutil.copyfile(input_path + "mission.txt", "mission.txt")
+        shutil.copyfile(input_path + "config.txt", "config.txt")
     # Read configuration files
     nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
     config = nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy
