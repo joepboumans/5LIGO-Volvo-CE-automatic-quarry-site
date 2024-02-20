@@ -11,21 +11,22 @@ class DFS():
     
     def run(self, node, next_cost, cap, path, score):
         self.iterations += 1
+        print(f'{path = }\n:\t{node = }')
 
         if self.end_node in path:
             return (path, score)
-            
-        score, cap = self.at_CS(node, score, cap)
+
         if cap < next_cost * ENERGY_COST:
             print(f'Cannot reach next {next_cost = }, {cap = }, {node = }, {score = }')
             return (path, float('inf'))
         
+        score, cap = self.at_CS(node, score, cap)
         path.append(node)
         score += next_cost
         cap -= next_cost * ENERGY_COST
 
         if score > self.min_score:
-            print(f'Not over min score {next_cost = }, {cap = }, {node = }, {score = } {path = }')
+            # print(f'Not over min score {next_cost = }, {cap = }, {node = }, {score = } {path = }')
             return (path, float('inf'))
         
         if node == self.end_node:
@@ -35,14 +36,22 @@ class DFS():
                 print(f'Smaller scored path found! {self.min_score = }\n {self.min_path = }\n{cap = }')
             return (path, score)
         
-        print(f'{path = }\n:\t{node = }')
         adj_paths = []
         for adj in self.adj_list[node]:
-            adj_paths.append(self.run(adj[0], adj[1], cap, path, score))
+            # if 'CS' in adj[0] and adj[1] * ENERGY_COST > cap:
+            #     print(f'Cannot reach charger {next_cost = }, {cap = }, {adj[0] = }')
+            #     continue
+            new_path = path.copy()
+            adj_paths.append(self.run(adj[0], adj[1], cap, new_path, score))
         
-        # print(adj_paths)
+        print(adj_paths)
         adj_score = {adj[1]:adj[0] for adj in adj_paths}
         min_adj = min(adj_score)
+        if min_adj == float('inf'):
+            path = adj_score[min_adj][:-1] 
+            print(f"Returning {adj_score[min_adj][:-1]} at {node = }")
+            return (adj_score[min_adj][:-1], min_adj)
+        print(f"Returning {adj_score[min_adj]} at {node = }")
         return (adj_score[min_adj], min_adj)
     
     def at_CS(self, node, score, cap):

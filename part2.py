@@ -283,7 +283,9 @@ def part2(config, mission):
     paths = mission_paths
     total_energy_cost = len(mission_path) * ENERGY_COST
     # Skip searching for charger when not needed
-    if total_energy_cost > initial_energy:
+    if not total_energy_cost > initial_energy:
+        final_path = mission_path
+    else:
         # ----------------------------------------
         # Find the distance to the charger
         pred = {}
@@ -324,7 +326,7 @@ def part2(config, mission):
         print(f'{charger_next_paths = }')
         
         for i,id in enumerate(mission):
-            print(f'{i}:{id = }')
+            # print(f'{i}:{id = }')
             id = id[:2]
             
             if i == len(mission) - 1:
@@ -334,10 +336,15 @@ def part2(config, mission):
                 continue
             else:
                 # COSTS ARE NOT CALCULATED CORRECTLY 
-                next_cost.append(len(paths[i]))
+                next_cost.append(len(paths[i]) + 1)
                 print(f'{next_cost[i] = }')
                 node2cs_cost.append(len(charger_paths[id]))
                 cs2next_cost.append(len(charger_paths[mission[i+1][:2]]))
+
+        sum = 0
+        for i,nc in enumerate(next_cost):
+            sum += nc * ENERGY_COST
+            print(f'{i}:{nc} {nc*ENERGY_COST} {node2cs_cost[i] * ENERGY_COST} {sum =  }')
         #------------------------------ 
         # Create adj list
         adj_list = {}
@@ -357,26 +364,27 @@ def part2(config, mission):
         # Create the final path
         print(f"{charger_mission = }")
         mission_charger_path = []
+        num_cs = 0
         for i,val in enumerate(charger_mission):
-            try:
-                if 'CS' in val:
-                    # Add charging time, in total 5 seconds
-                    mission_charger_path += charger_next_paths[mission[i-1]][1:]
-                    print(f"Recharging at {mission[i-1]} with {len(mission_charger_path)}")
-                    print(f"{charger_next_paths[mission[i-1]] = }")
-                    print(f"{charger_paths[mission[i]] = }")
-                    mission_charger_path += [CS_position]
-                    mission_charger_path += [CS_position]
-                    mission_charger_path += [CS_position]
-                    
-                    mission_charger_path += charger_paths[mission[i]]
-                else:
-                    mission_charger_path += paths[i]
-            except:
-                break
+            if 'CS' in val:
+                num_cs += 1
+                prev_mission = mission[i-1][:2]
+                curr_mission = mission[i][:2]
+                # Add charging time, in total 5 seconds
+                mission_charger_path += charger_next_paths[prev_mission][1:]
+                print(f"Recharging at {prev_mission} with {len(mission_charger_path)} or {len(mission_charger_path * ENERGY_COST)}")
+                print(f"{charger_next_paths[prev_mission] = }")
+                print(f"{charger_paths[curr_mission] = }")
+                mission_charger_path += [CS_position]
+                mission_charger_path += [CS_position]
+                mission_charger_path += [CS_position]
+                
+                mission_charger_path += charger_paths[curr_mission]
+            else:
+                if i == len(charger_mission) - 1:
+                    break
+                mission_charger_path += paths[i - num_cs]
         final_path = mission_charger_path
-    else:
-        final_path = mission_path
     
     # Caclulate the total distance
     completion_times = len(final_path) - 1
