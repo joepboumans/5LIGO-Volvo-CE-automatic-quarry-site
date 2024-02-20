@@ -1,5 +1,5 @@
 CS_TIME = 5
-ENERGY_COST = 100
+ENERGY_COST = 50
 class DFS():
     def __init__(self, max_cap, adj_list, end_node) -> None:
         self.max_cap = max_cap
@@ -12,9 +12,12 @@ class DFS():
     def run(self, node, next_cost, cap, path, score):
         self.iterations += 1
 
+        if self.end_node in path:
+            return (path, score)
+            
         score, cap = self.at_CS(node, score, cap)
         if cap < next_cost * ENERGY_COST:
-            print(f'Cannot reach next {next_cost = }, {cap = }, {node = }')
+            print(f'Cannot reach next {next_cost = }, {cap = }, {node = }, {score = }')
             return (path, float('inf'))
         
         path.append(node)
@@ -22,7 +25,9 @@ class DFS():
         cap -= next_cost * ENERGY_COST
 
         if score > self.min_score:
+            print(f'Not over min score {next_cost = }, {cap = }, {node = }, {score = } {path = }')
             return (path, float('inf'))
+        
         if node == self.end_node:
             if score < self.min_score:
                 self.min_score = score
@@ -47,27 +52,28 @@ class DFS():
         return score, cap
 
 
-mission = ['L1', 'U1', 'L3', 'U1_2', 'L2']
-next_cost = [10, 8, 20, 15]
-node2cs_cost = [3, 6, 15, 6, 2]
-cs2next_cost = [4, 3, 15, 4]
-cs_time = 5
-init_cap = 3350
-max_cap = 4730
+if __name__ == "__main__":
+    mission = ['L1', 'U1', 'L3', 'U1_2', 'L2']
+    next_cost = [10, 8, 20, 15]
+    node2cs_cost = [3, 6, 15, 6, 2]
+    cs2next_cost = [4, 3, 15, 4]
+    cs_time = 5
+    init_cap = 3350
+    max_cap = 4730
 
-adj_list = {}
-for i,m in enumerate(mission):
-    if m == mission[-1]:
-        continue
-    adj_list[m] = [(mission[i + 1], next_cost[i]),('CS_' + m, node2cs_cost[i] + cs_time)]
-    adj_list['CS_' + m] = [(mission[i + 1], cs2next_cost[i])]
+    adj_list = {}
+    for i,m in enumerate(mission):
+        if m == mission[-1]:
+            continue
+        adj_list[m] = [(mission[i + 1], next_cost[i]),('CS_' + m, node2cs_cost[i] + cs_time)]
+        adj_list['CS_' + m] = [(mission[i + 1], cs2next_cost[i])]
 
-print(adj_list)
-print(f'Finding path from {mission[0]} to {mission[-1]}')
-# dfs(mission[-1], mission[0], next_cost[0], path, 0)
+    print(adj_list)
+    print(f'Finding path from {mission[0]} to {mission[-1]}')
+    # dfs(mission[-1], mission[0], next_cost[0], path, 0)
 
-dfs = DFS(max_cap, adj_list, mission[-1])
-dfs.run(mission[0], next_cost[0], init_cap, [], 0)
-print('\n\n')
-print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
-print(f'{dfs.iterations = }')
+    dfs = DFS(max_cap, adj_list, mission[-1])
+    dfs.run(mission[0], next_cost[0], init_cap, [], 0)
+    print('\n\n')
+    print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
+    print(f'{dfs.iterations = }')

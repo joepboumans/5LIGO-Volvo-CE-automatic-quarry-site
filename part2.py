@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import colors
 from matplotlib import animation
+from dfs import DFS
 
 GRID_SIZE = 12
 WALL = -1
@@ -192,73 +193,6 @@ def distance_to_charger(charger_pos, mission_pos, grid_map, distance, pred):
 
     return distance
 
-def dfs(path, node, score, costs, end_node):
-    score += costs[node]
-    path.append(node)
-    if end_node == node:
-        return score
-    
-    charge_score = dfs(path, charge_node, score, costs, end_node)
-    score = dfs(path, next_node, score, costs, end_node)
-    return min(score, charge_score)
-    
-def dfs_energy_path(max_cap, init_cap, total_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission):
-    """ Finds the path via DFS with a heuristic"""
-    
-    adjecency_list = {}
-    
-    
-    
-def find_shortest_path_energy(max_cap, init_cap, total_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission):
-    queue = []
-    path = []
-    curr_cap = [0] * len(mission)
-    curr_cap[0] = init_cap
-    
-    # No need to add charging, can do missions with initial capacity
-    if init_cap >= total_cost:
-        return mission
-    
-    queue = [0]
-    while queue:
-        start = queue[0]
-        # Find the node with the lowest cost
-        min_cost = 1000000
-        for i in queue:
-            # If the end can be reached, goto end
-            if curr_cap[i] >= end_cost[i] and i <= len(mission):
-                path += [j for j in range(i, len(mission))]
-                return path
-            
-            # Calculate the cost
-            recharger_cost = max_cap * int((end_cost[i] - curr_cap[i])/ max_cap)
-            cost = charger_cost[i] + recharger_cost - (max_cap - (charger_next_cost[i] - curr_cap[i]))
-            
-            can_reach_charger = int(curr_cap[i]/ENERGY_COST) > int(charger_cost[i]/ENERGY_COST + 1)
-            if not can_reach_charger:
-                cost = 1000000
-            
-            if cost < min_cost:
-                min_cost = cost
-                current = i
-            
-            can_reach_next = int(curr_cap[i]/ENERGY_COST) > int(next_cost[i]/ENERGY_COST + 1)
-            if can_reach_next and not i+1 in queue and i+2 < len(mission):
-                queue.append(i+1)
-                curr_cap[i+1] = curr_cap[i] - next_cost[i]
-                
-        # Move to charger
-        for i in range(start, current):
-            path.append(i)
-        path += [current, 'CS']
-        curr_cap[current + 1] = max_cap - charger_next_cost[current]
-        # Check if the next node is the last, otherwise add it to the queue
-        if current + 1 <= len(mission):
-            queue = [current + 1]
-        else:
-            return path
-
-
 def find_path(start_pos, end_pos, path, pred):
     x, y = end_pos
     x_start, y_start = start_pos
@@ -272,6 +206,7 @@ def find_path(start_pos, end_pos, path, pred):
     # path.append([x_start,y_start])
     path.reverse()
     return path
+
 
 def part2(config, mission):
     # Read configuration files
@@ -294,6 +229,8 @@ def part2(config, mission):
         unique_missions[id] = pos
     unique_missions['IH'] = hauler_positions[0]
 
+    print(f'{mission = }')
+    print(f'{mission_pos = }')
     # Create map and distance, pred for path finding
     grid_map = np.zeros((GRID_SIZE, GRID_SIZE))
     distance = np.zeros((GRID_SIZE, GRID_SIZE))
@@ -339,95 +276,95 @@ def part2(config, mission):
     
     mission_paths  = paths.copy()
     mission_path = mission_path
+    for i,mp in enumerate(mission_paths):
+        print(f'{i}:{mp}')
 
     CS_position = CS_positions[0]
     paths = mission_paths
-    # ----------------------------------------
-    # Find the distance to the charger
-    pred = {}
-    distance = distance_to_charger(CS_position, unique_missions, grid_map, distance, pred)
-    # Find the path from charger to mission points
-    charger_paths = {}
-    charger_next_paths = {}
-    for id, pos in unique_missions.items():
-        path =[]
-        path = find_path(CS_position, pos, path, pred)
-        CS_x, CS_y = CS_position
-        charger_paths[id] = [[CS_x, CS_y]] + path
-        path.reverse()
-        charger_next_paths[id] = path + [[CS_x, CS_y]]
-    
-        # ----------------------------------------
-    # Find the distance to the charger
-    pred = {}
-    distance = distance_to_charger(CS_position, unique_missions, grid_map, distance, pred)
-    # Find the path from charger to mission points
-    charger_paths = {}
-    charger_next_paths = {}
-    for id, pos in unique_missions.items():
-        path =[]
-        path = find_path(CS_position, pos, path, pred)
-        CS_x, CS_y = CS_position
-        charger_paths[id] = [[CS_x, CS_y]] + path
-        path.reverse()
-        charger_next_paths[id] = path + [[CS_x, CS_y]]
-    
-    # ---------------------------------------
-    # Create unique nodes for DFS
-    print(mission)
-    mission_count = []
-    for m in mission:
-        if not m in mission_count:
-            mission_count.append(m)
-            continue
-        mission_count.append(m + "_%d" % mission_count.count(m))
-    mission = mission_count
-    print(mission)
-    # ----------------------------------------
-    # Create tables for energy caclulation
     total_energy_cost = len(mission_path) * ENERGY_COST
-    next_cost = []
-    node2cs_cost = []
-    cs2next_cost = []
-    adj_list = {}
-    
-    for i,id in enumerate(mission):
-        id = id[:2]
-        try:
-            next_cost.append(len(paths[i]))
-            node2cs_cost.append(len(charger_paths[id]))
-            cs2next_cost.append(len(charger_paths[mission[i+1]]))
-        except:
-            next_cost.append(len(paths[i]))
-            node2cs_cost.append(len(charger_paths[id]))
-            cs2next_cost.append(0)
-            continue
-    #------------------------------ 
-    # Create adj list
-    adj_list = {}
-    for i,m in enumerate(mission):
-        if m == mission[-1]:
-            break
-        adj_list[m] = [(mission[i + 1], next_cost[i]),('CS_' + m, node2cs_cost[i])]
-        adj_list['CS_' + m] = [(mission[i + 1], cs2next_cost[i])]
-    print(adj_list)
-    exit()
-    
-    # ----------------------------------------
-    # Find the shortest path with energy
-    charger_mission = dfs_energy_path(max_energy, initial_energy, total_energy_cost, next_cost, end_cost, charger_cost, charger_next_cost, mission)
-    # Create the final path
-    print(f"{charger_mission = }")
-    mission_charger_path = []
-    if not charger_mission == mission:
+    # Skip searching for charger when not needed
+    if total_energy_cost > initial_energy:
+        # ----------------------------------------
+        # Find the distance to the charger
+        pred = {}
+        distance = distance_to_charger(CS_position, unique_missions, grid_map, distance, pred)
+        # Find the path from charger to mission points
+        charger_paths = {}
+        charger_next_paths = {}
+        for id, pos in unique_missions.items():
+            path =[]
+            path = find_path(CS_position, pos, path, pred)
+            CS_x, CS_y = CS_position
+            charger_paths[id] = [[CS_x, CS_y]] + path
+            path.reverse()
+            charger_next_paths[id] = path + [[CS_x, CS_y]]
+        
+        # ---------------------------------------
+        # Create unique nodes for DFS
+        mission.insert(0, 'IH')
+        print(f'precount {mission = }')
+        mission_count = []
+        count_list = []
+        for m in mission:
+            if not m in mission_count:
+                mission_count.append(m)
+                count_list.append(m)
+                continue
+            mission_count.append(m + "_%d" % count_list.count(m))
+            count_list.append(m)
+        mission = mission_count
+        print(f'counted {mission = }')
+        # ----------------------------------------
+        # Create tables for energy caclulation
+        next_cost = []
+        node2cs_cost = []
+        cs2next_cost = []
+        adj_list = {}
+
+        print(f'{charger_next_paths = }')
+        
+        for i,id in enumerate(mission):
+            print(f'{i}:{id = }')
+            id = id[:2]
+            
+            if i == len(mission) - 1:
+                next_cost.append(-1)
+                node2cs_cost.append(float('inf'))
+                cs2next_cost.append(float('inf'))
+                continue
+            else:
+                # COSTS ARE NOT CALCULATED CORRECTLY 
+                next_cost.append(len(paths[i]))
+                print(f'{next_cost[i] = }')
+                node2cs_cost.append(len(charger_paths[id]))
+                cs2next_cost.append(len(charger_paths[mission[i+1][:2]]))
+        #------------------------------ 
+        # Create adj list
+        adj_list = {}
+        for i,m in enumerate(mission):
+            if m == mission[-1]:
+                break
+            adj_list[m] = [(mission[i + 1], next_cost[i]),('CS_' + m, node2cs_cost[i])]
+            adj_list['CS_' + m] = [(mission[i + 1], cs2next_cost[i])]
+        print(adj_list)
+
+        dfs = DFS(max_energy, adj_list, mission[-1])
+        dfs.run(mission[0], next_cost[0], initial_energy, [], 0)
+
+        print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
+        print(f'{dfs.iterations = }')
+        charger_mission = dfs.min_path
+        # Create the final path
+        print(f"{charger_mission = }")
+        mission_charger_path = []
         for i,val in enumerate(charger_mission):
             try:
-                if val == 'CS':
+                if 'CS' in val:
                     # Add charging time, in total 5 seconds
                     mission_charger_path += charger_next_paths[mission[i-1]][1:]
-                    # print(f"Recharging at {mission[i-1]} with {len(mission_charger_path)}")
-                    # print(f"{charger_next_paths[mission[i-1]] = }")
-                    # print(f"{charger_paths[mission[i]] = }")
+                    print(f"Recharging at {mission[i-1]} with {len(mission_charger_path)}")
+                    print(f"{charger_next_paths[mission[i-1]] = }")
+                    print(f"{charger_paths[mission[i]] = }")
                     mission_charger_path += [CS_position]
                     mission_charger_path += [CS_position]
                     mission_charger_path += [CS_position]
@@ -439,7 +376,8 @@ def part2(config, mission):
                 break
         final_path = mission_charger_path
     else:
-        final_path = mission_path 
+        final_path = mission_path
+    
     # Caclulate the total distance
     completion_times = len(final_path) - 1
     makespan = completion_times + 1

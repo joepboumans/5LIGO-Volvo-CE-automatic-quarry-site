@@ -9,4 +9,4 @@
 [6,10]-[1,4]-[9,5]-[2,10]-[3,11]-[12,1]-[6,3]-[5,11]-[4,10]-[5,2]-[1,7]-[8,11]	//Position of the SOs in the lexicographical order
 [9,7]	//Position of the charging station
 4730	//Maximum capacity of the hauler's battery
-3350	//Initial stored energy in the hauler's battery
+2350	//Initial stored energy in the hauler's battery
