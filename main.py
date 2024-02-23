@@ -2,6 +2,7 @@ import re
 import shutil
 import os
 from glob import glob
+import csv
 
 from part1 import part1
 from part2 import part2
@@ -62,14 +63,32 @@ def read_mission(file='mission.txt'):
 
 
 if __name__ == "__main__":
-    # print(os.scandir('Part2'))
     files = [y for x in os.walk('Part2') for y in glob(os.path.join(x[0], '*.txt'))]
     files = [f.replace("config.txt", '').replace('mission.txt', '') for f in files]
     files = list(set(files))
+
+    baseline_makespan = {}
+    with open('baseline.csv') as baseline:
+        reader = csv.reader(baseline)
+        curr_part = ''
+        curr_diff = ''
+        curr_length = ''
+        for row in reader:
+            if "Part" in row[0]:
+                curr_part = row[0]
+                continue
+            if '-' in row[0]:
+                curr_diff = row[0]
+                continue
+            if "Mission" in row[0]:
+                curr_length = row[0][-1]
+                continue
+            curr_mission = curr_part + curr_diff + curr_length + row[0]
+            curr_mission.strip('\n')
+            baseline_makespan[curr_mission] = int(row[1])
+                
     for f in files[:2]:
         input_path = f
-        # input_path = "Part2/0-Easy/10/1_"
-        # input_path = ""
         if input_path != "":
             shutil.copyfile(input_path + "mission.txt", "mission.txt")
             shutil.copyfile(input_path + "config.txt", "config.txt")
