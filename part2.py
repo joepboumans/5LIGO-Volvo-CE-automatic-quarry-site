@@ -301,8 +301,10 @@ def part2(config, mission):
             path.reverse()
             charger_next_paths[id] = path + [[CS_x, CS_y]]
         
-        # print(f'{charger_paths = }')
-        # print(f'{charger_next_paths = }')
+        for cs_path, cs_next_path in zip(charger_paths.values(), charger_next_paths.values()):
+            print(f'{len(cs_path) + len(cs_next_path)}')
+        print(f'{charger_paths = }')
+        print(f'{charger_next_paths = }')
         # ---------------------------------------
         # Create unique nodes for DFS
         mission.insert(0, 'IH')
@@ -360,8 +362,8 @@ def part2(config, mission):
         dfs = DFS(max_energy, adj_list, mission[-1])
         dfs.run(mission[0], next_cost[0], initial_energy, [], 0)
 
-        print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
-        print(f'{dfs.iterations = }')
+        # print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
+        # print(f'{dfs.iterations = }')
         charger_mission = dfs.min_path
         # Create the final path
         # print(f"{charger_mission = }")
@@ -404,13 +406,15 @@ def part2(config, mission):
     execution_time = (end - start)*1000
     print(f"{execution_time = :.2f} ms")
     print(f"{makespan = }")
-    
         
     for i in range(len(final_path)):
         if i < 1:
             continue
         if final_path[i] == final_path[i - 1]:
-            print(f'{i}Equal {final_path[i]}')
+            print(f'{i} Equal {final_path[i]}')
+
+    # print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
+    # print(f'{dfs.iterations = }')
     write_output(makespan, [completion_times], execution_time, [final_path])
 
 

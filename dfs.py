@@ -33,7 +33,7 @@ class DFS():
             if score < self.min_score:
                 self.min_score = score
                 self.min_path = path.copy()
-                print(f'Smaller scored path found! {self.min_score = }\n {self.min_path = }\n{cap = }')
+                # print(f'Smaller scored path found! {self.min_score = }\n {self.min_path = }\n{cap = }')
             return (path, score)
         
         adj_paths = []

@@ -1,5 +1,7 @@
 import re
 import shutil
+import os
+from glob import glob
 
 from part1 import part1
 from part2 import part2
@@ -60,27 +62,33 @@ def read_mission(file='mission.txt'):
 
 
 if __name__ == "__main__":
-    input_path = "Part2/0-Easy/8/4_"
-    # input_path = ""
-    if input_path != "":
-        shutil.copyfile(input_path + "mission.txt", "mission.txt")
-        shutil.copyfile(input_path + "config.txt", "config.txt")
-    # Read configuration files
-    nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
-    config = nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy
-    mission = read_mission()
+    # print(os.scandir('Part2'))
+    files = [y for x in os.walk('Part2') for y in glob(os.path.join(x[0], '*.txt'))]
+    files = [f.replace("config.txt", '').replace('mission.txt', '') for f in files]
+    files = list(set(files))
+    for f in files[:2]:
+        input_path = f
+        # input_path = "Part2/0-Easy/10/1_"
+        # input_path = ""
+        if input_path != "":
+            shutil.copyfile(input_path + "mission.txt", "mission.txt")
+            shutil.copyfile(input_path + "config.txt", "config.txt")
+        # Read configuration files
+        nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = read_config()
+        config = nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy
+        mission = read_mission()
 
-    nHaulers = int(nHaulers)
-    nCS = int(nCS)
-    if nHaulers == 1 and nCS == 0:
-        print("Part 1")
-        part1(config, mission)
-    elif nHaulers == 1 and nCS == 1:
-        print("Part 2")
-        part2(config, mission)
-    else:
-        print("Part 3")
-        part3(config, mission)
+        nHaulers = int(nHaulers)
+        nCS = int(nCS)
+        if nHaulers == 1 and nCS == 0:
+            print("Part 1")
+            part1(config, mission)
+        elif nHaulers == 1 and nCS == 1:
+            print("Part 2")
+            part2(config, mission)
+        else:
+            print("Part 3")
+            part3(config, mission)
 
-    import sanity_check
-    sanity_check.main()
+        import sanity_check
+        sanity_check.main()
