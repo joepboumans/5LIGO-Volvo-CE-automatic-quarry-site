@@ -304,7 +304,7 @@ def check_charging(positions, completion_time,batery_capacity,initial_energy,CS_
         cur_battery=initial_energy
         j=0
         while j < completion_time[i]-1:
-            print(str(j) +"\t" +str(cur_battery))
+            # print(str(j) +"\t" +str(cur_battery))
             if(positions[i][j] in CS_positions and j+5 < completion_time[i]):
                 index = CS_positions.index(positions[i][j])
                 wait =0

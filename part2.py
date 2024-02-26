@@ -301,10 +301,15 @@ def part2(config, mission):
             path.reverse()
             charger_next_paths[id] = path + [[CS_x, CS_y]]
         
-        for cs_path, cs_next_path in zip(charger_paths.values(), charger_next_paths.values()):
-            print(f'{len(cs_path) + len(cs_next_path)}')
-        print(f'{charger_paths = }')
-        print(f'{charger_next_paths = }')
+        for i,m in enumerate(mission):
+            if i == len(mission) - 1:
+                print(f'{m}: Final point')
+                continue
+            print(f'{m}: {len(charger_paths[m])} + {len(charger_paths[mission[i+1]])} = {len(charger_paths[m]) + len(charger_paths[mission[i+1]])}')
+        # for cs_path, cs_next_path in zip(charger_paths.values(), charger_next_paths.values()):
+        #     print(f'{len(cs_path)} + {len(cs_next_path)} = {len(cs_path) + len(cs_next_path)}')
+        # print(f'{charger_paths = }')
+        # print(f'{charger_next_paths = }')
         # ---------------------------------------
         # Create unique nodes for DFS
         mission.insert(0, 'IH')
@@ -345,7 +350,7 @@ def part2(config, mission):
         sum = 0
         for i,nc in enumerate(next_cost):
             sum += nc * ENERGY_COST
-            print(f'{i}:{nc} {nc*ENERGY_COST} {node2cs_cost[i] * ENERGY_COST} {sum =  }')
+            print(f'{mission[i]}:{nc} {nc*ENERGY_COST} {node2cs_cost[i] * ENERGY_COST} {sum =  }')
         #------------------------------ 
         # Create adj list
         adj_list = {}
@@ -366,7 +371,7 @@ def part2(config, mission):
         # print(f'{dfs.iterations = }')
         charger_mission = dfs.min_path
         # Create the final path
-        # print(f"{charger_mission = }")
+        print(f"{charger_mission = }")
         mission_charger_path = []
         num_cs = 0
         for i,val in enumerate(charger_mission):

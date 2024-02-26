@@ -66,6 +66,7 @@ if __name__ == "__main__":
     files = [y for x in os.walk('Part2') for y in glob(os.path.join(x[0], '*.txt'))]
     files = [f.replace("config.txt", '').replace('mission.txt', '') for f in files]
     files = list(set(files))
+    files.sort()
 
     baseline_makespan = {}
     with open('baseline.csv') as baseline:
@@ -77,18 +78,20 @@ if __name__ == "__main__":
             if "Part" in row[0]:
                 curr_part = row[0]
                 continue
-            if '-' in row[0]:
+            if "-" in row[0]:
                 curr_diff = row[0]
                 continue
             if "Mission" in row[0]:
-                curr_length = row[0][-1]
+                mission_length = re.findall(r'(\d+)', row[0])[0]
+                curr_length = mission_length
                 continue
             curr_mission = curr_part + curr_diff + curr_length + row[0]
             curr_mission.strip('\n')
             baseline_makespan[curr_mission] = int(row[1])
                 
-    for f in files[:2]:
+    for f in files:
         input_path = f
+        # input_path = "Part2\\0-Easy\\10\\1_"
         if input_path != "":
             shutil.copyfile(input_path + "mission.txt", "mission.txt")
             shutil.copyfile(input_path + "config.txt", "config.txt")
@@ -111,3 +114,16 @@ if __name__ == "__main__":
 
         import sanity_check
         sanity_check.main()
+
+        with open('result.txt') as res:
+            lines = res.readlines()
+            makespan = int(lines[0])
+
+        name = input_path.replace('\\', '').replace('_','')
+        baseline_span = baseline_makespan[name]
+
+        print(f"{baseline_span = } vs {makespan = }")
+        if baseline_span < makespan:
+            print("NOT OPTIMAL SOLUTION")
+            print(input_path)
+            exit()

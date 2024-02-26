@@ -11,7 +11,7 @@ class DFS():
     
     def run(self, node, next_cost, cap, path, score):
         self.iterations += 1
-        # print(f'{path = }\n:\t{node = }')
+        # print(f'{path = }\n:\t{node = } {cap = } {score = }')
 
         if self.end_node in path:
             return (path, score)
@@ -22,12 +22,13 @@ class DFS():
         
         score, cap = self.at_CS(node, score, cap)
         path.append(node)
-        score += next_cost
-        cap -= next_cost * ENERGY_COST
+        if not node == 'IH':
+            score += next_cost
+            cap -= next_cost * ENERGY_COST
 
-        # if score > self.min_score:
-        #     # print(f'Not over min score {next_cost = }, {cap = }, {node = }, {score = } {path = }')
-        #     return (path, float('inf'))
+        if score > self.min_score:
+            # print(f'Not over min score {next_cost = }, {cap = }, {node = }, {score = } {path = }')
+            return (path, float('inf'))
         
         if node == self.end_node:
             if score < self.min_score:
