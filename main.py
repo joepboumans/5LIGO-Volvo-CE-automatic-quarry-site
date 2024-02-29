@@ -91,7 +91,7 @@ if __name__ == "__main__":
                 
     for f in files:
         input_path = f
-        # input_path = "Part2\\0-Easy\\10\\1_"
+        # input_path = "Part2\\1-Medium\\12\\5_"
         if input_path != "":
             shutil.copyfile(input_path + "mission.txt", "mission.txt")
             shutil.copyfile(input_path + "config.txt", "config.txt")
