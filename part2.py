@@ -303,11 +303,11 @@ def part2(config, mission):
             path.reverse()
             charger_next_paths[id] = path + [[CS_x, CS_y]]
         
-        # for i,m in enumerate(mission):
-        #     if i == len(mission) - 1:
-        #         print(f'{m}: Final point')
-        #         continue
-        #     print(f'{m}: {len(charger_paths[m])} + {len(charger_paths[mission[i]])} = {len(charger_paths[m]) + len(charger_paths[mission[i+1]])}')
+        for i,m in enumerate(mission):
+            if i == len(mission) - 1:
+                print(f'{m}: Final point')
+                continue
+            print(f'{m}: {len(charger_paths[m])} + {len(charger_paths[mission[i + 1]])} = {len(charger_paths[m]) + len(charger_paths[mission[i+1]])}')
         # for cs_path, cs_next_path in zip(charger_paths.values(), charger_next_paths.values()):
         #     print(f'{len(cs_path)} + {len(cs_next_path)} = {len(cs_path) + len(cs_next_path)}')
         # print(f'{charger_paths = }')
@@ -343,44 +343,56 @@ def part2(config, mission):
                 node2cs_cost.append(len(charger_paths[id]) - 1)
 
         total_cs = 0
-        cs_idx = 0
         permutations = 1
+        positions = len(mission) - 1
         found_path = False
         
         tabulation = [[-1 for _ in range(len(mission) * 2)] for _ in range(permutations)]
         scores = [0 for _ in range(permutations)]
         im_paths = [mission for _ in range(permutations)]
         while(not found_path):
+            cs_idx = 0
+            cs_start = 1
             for i in range(permutations):
                 tabulation[i][0] = initial_energy
 
-                if total_cs > 0:
-                    cs_idx = i % total_cs + int(i / total_cs) + 1
+                print(f'{cs_idx = } {positions = } {cs_start = }')
                 
                 n_cs = 0
                 for j in range(1,len(mission)):
-                    if n_cs < total_cs and j == cs_idx:
+                    if n_cs < total_cs and j == cs_start + cs_idx + n_cs:
                         tabulation[i][j  + n_cs] = tabulation[i][j - 1 + n_cs] - node2cs_cost[j - 1] * ENERGY_COST
                         tabulation[i][j + 1 + n_cs] = max_energy - node2cs_cost[j] * ENERGY_COST
                         
                         if node2cs_cost[j - 1] != float('inf'):
-                            print(f'{scores[i] = } + {node2cs_cost[j - 1] = }')
+                            # print(f'{scores[i] = } + {node2cs_cost[j - 1] = }')
                             scores[i] += node2cs_cost[j] + CHARGE_TIME
                         if node2cs_cost[j] != float('inf'):
-                            print(f'{scores[i] = } + {node2cs_cost[j] = }')
+                            # print(f'{scores[i] = } + {node2cs_cost[j] = }')
                             scores[i] += node2cs_cost[j]
 
                         im_paths[i].insert(j + n_cs, "CS_" + im_paths[i][j - 1])
                         n_cs += 1
+                        cs_idx += 1
                     else:
                         next_value =  tabulation[i][j - 1 + n_cs] - next_cost[j] * ENERGY_COST
                         if next_cost[j] != float('-inf'):
-                            print(f'{scores[i] = } + {next_cost[j] = }')
+                            # print(f'{scores[i] = } + {next_cost[j] = }')
                             scores[i] += next_cost[j]
                         tabulation[i][j  + n_cs] = next_value
+                        if next_value < 0:
+                            print('Early brake due to negative cap')
+                            tabulation[i][j + n_cs + 1] = float('inf')
+                            scores[i] = math.inf
+                            break
+                    
+                if total_cs > 0 and cs_idx > positions + 2 - cs_start:
+                    cs_start += 1
+                    cs_idx = cs_idx % (positions - cs_start)
+                    
                 print(f'{im_paths[i]}')
 
-                    # print(f'{j} {tabulation[i][j + n_cs]}')
+                print(f'{j} {tabulation[i][j + n_cs]}')
             # print(scores)
             for tab in tabulation:
                 out_of_energy = False
@@ -396,7 +408,12 @@ def part2(config, mission):
             
             if not found_path:
                 total_cs += 1
-                positions = len(mission) - 2
+                print(f'{permutations = }')
+                if total_cs >= 3:
+                    print("INFINITE LOOP!")
+                    print(*tabulation, sep='\n')
+                    print(f'{total_cs = }')
+                    exit()
                 permutations = int((math.factorial(positions)) / (math.factorial(total_cs)*math.factorial((positions - total_cs))))
                 # print(permutations)
                 # print(mission)
@@ -427,22 +444,21 @@ def part2(config, mission):
         #     # print(f'{mission[i]}:{nc} {nc*ENERGY_COST} {node2cs_cost[i] * ENERGY_COST} {sum =  }')
         #------------------------------ 
         # # Create adj list
-        # adj_list = {}
-        # for i,m in enumerate(mission):
-        #     if m == mission[-1]:
-        #         break
-        #     if i == 0:
-        #        adj_list[m] = [(mission[i + 1], next_cost[i])]
-        #        continue
-        #     adj_list[m] = [(mission[i + 1], next_cost[i]),('CS_' + m, node2cs_cost[i])]
-        #     adj_list['CS_' + m] = [(mission[i + 1], cs2next_cost[i])]
-        # # print(adj_list)
+        adj_list = {}
+        for i,m in enumerate(mission):
+            if m == mission[-1]:
+                break
+            adj_list[m] = [(mission[i + 1], next_cost[i + 1]),('CS_' + m, node2cs_cost[i])]
+            adj_list['CS_' + m] = [(mission[i + 1], node2cs_cost[i + 1])]
+        print(adj_list)
 
+        # print(f'Finding end node {mission[-1]}')
         # dfs = DFS(max_energy, adj_list, mission[-1])
         # dfs.run(mission[0], next_cost[0], initial_energy, [], 0)
 
         # print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
         # print(f'{dfs.iterations = }')
+        # charger_mission = dfs.min_path
         charger_mission = min_path
         # Create the final path
         # print(f"{charger_mission = }")
@@ -486,11 +502,11 @@ def part2(config, mission):
     print(f"{execution_time = :.2f} ms")
     print(f"{makespan = }")
         
-    # for i in range(len(final_path)):
-    #     if i < 1:
-    #         continue
-    #     if final_path[i] == final_path[i - 1]:
-    #         print(f'{i} Equal {final_path[i]}')
+    for i in range(len(final_path)):
+        if i < 1:
+            continue
+        if final_path[i] == final_path[i - 1]:
+            print(f'{i} Equal {final_path[i]}')
 
     # print(f'Final path {dfs.min_path}\nWith {dfs.min_score = }')
     # print(f'{dfs.iterations = }')

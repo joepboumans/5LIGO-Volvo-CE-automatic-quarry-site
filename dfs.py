@@ -10,39 +10,39 @@ class DFS():
         self.end_node = end_node
         self.iterations = 0
     
-    def run(self, node, next_cost, cap, path, score):
+    def run(self, node, cost, cap, path, score):
         self.iterations += 1
         if not node == 'IH':
-            score += next_cost
-            cap -= next_cost * ENERGY_COST
+            score += cost
+            cap -= cost * ENERGY_COST
         
         # print(f'{path = }\n:\t{node = } {cap = } {score = }')
 
         if self.end_node in path:
             return (path, score)
 
-        if math.floor(cap/ENERGY_COST) < next_cost:
-            # print(f'Cannot reach next {next_cost = }, {cap = }, {node = }, {score = }')
+        if math.floor(cap/ENERGY_COST) < cost:
+            print(f'Cannot reach next {cost = }, {cap = }, {node = }, {score = }')
             return (path, float('inf'))
         
         score, cap = self.at_CS(node, score, cap)
         path.append(node)
 
         if score > self.min_score:
-            # print(f'Not over min score {next_cost = }, {cap = }, {node = }, {score = } {path = }')
+            print(f'Not over min score {cost = }, {cap = }, {node = }, {score = } {path = }')
             return (path, float('inf'))
         
         if node == self.end_node:
             if score < self.min_score:
                 self.min_score = score
                 self.min_path = path.copy()
-                # print(f'Smaller scored path found! {self.min_score = }\n {self.min_path = }\n{cap = }')
+                print(f'Smaller scored path found! {self.min_score = }\n {self.min_path = }\n{cap = }')
             return (path, score)
         
         adj_paths = []
-        for adj in self.adj_list[node]:
+        for next_node, next_cost in self.adj_list[node]:
             new_path = path.copy()
-            adj_paths.append(self.run(adj[0], adj[1], cap, new_path, score))
+            adj_paths.append(self.run(next_node, next_cost, cap, new_path, score))
         
         # print(adj_paths)
         adj_score = {adj[1]:adj[0] for adj in adj_paths}
