@@ -213,26 +213,28 @@ def get_energy_cons(total_e, init_e, paths, charger_paths, mission):
         node2end = [total_e]
         start2node = [0]
         cap_cons = [init_e]
-        next_node = []
+        detour_cost = []
         node2cs = []
-
         
         for i,id in enumerate(mission):
             id = id[:2]
 
+            next_cost = (len(paths[i - 1])) * ENERGY_COST
+            node2cs = len(charger_paths[id]) * ENERGY_COST
+            cs2next = len(charger_paths[mission[i - 1][:2]]) * ENERGY_COST
             if id == 'IH':
+                detour_cost.append(node2cs + cs2next - next_cost)
                 continue
             
-            next_cost = (len(paths[i - 1])) * ENERGY_COST
             start2node.append(start2node[i-1] + next_cost)
             node2end.append(node2end[i - 1] - next_cost)
             cap_cons.append(cap_cons[i - 1] - next_cost)
-            next_node.append(next_cost)
-            node2cs.append(len(charger_paths[id]) - 1)
+            detour_cost.append(node2cs + cs2next - next_cost)
 
         print(f'{node2end = }')
         print(f'{start2node = }')
         print(f'{cap_cons = }')
+        print(f'{detour_cost = }')
 
 def part2(config, mission):
     # Read configuration files
