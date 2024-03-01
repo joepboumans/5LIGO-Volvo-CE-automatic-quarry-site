@@ -209,6 +209,31 @@ def find_path(start_pos, end_pos, path, pred):
     return path
 
 
+def get_energy_cons(total_e, init_e, paths, charger_paths, mission):
+        node2end = [total_e]
+        start2node = [0]
+        cap_cons = [init_e]
+        next_node = []
+        node2cs = []
+
+        
+        for i,id in enumerate(mission):
+            id = id[:2]
+
+            if id == 'IH':
+                continue
+            
+            next_cost = (len(paths[i - 1])) * ENERGY_COST
+            start2node.append(start2node[i-1] + next_cost)
+            node2end.append(node2end[i - 1] - next_cost)
+            cap_cons.append(cap_cons[i - 1] - next_cost)
+            next_node.append(next_cost)
+            node2cs.append(len(charger_paths[id]) - 1)
+
+        print(f'{node2end = }')
+        print(f'{start2node = }')
+        print(f'{cap_cons = }')
+
 def part2(config, mission):
     # Read configuration files
     nHaulers, nLP, nULP, nSO, nCS, hauler_positions, LP_positions, ULP_positions, SO_positions, CS_positions, max_energy, initial_energy = config
@@ -326,22 +351,8 @@ def part2(config, mission):
         # print(f'counted {mission = }')
         # ----------------------------------------
         # Create tables for energy caclulation
-        next_cost = []
-        node2cs_cost = []
-
-        
-        for i,id in enumerate(mission):
-            # print(f'{i}:{id = }')
-            id = id[:2]
-            
-            if i == len(mission) - 1:
-                next_cost.append(float('-inf'))
-                node2cs_cost.append(float('inf'))
-                continue
-            else:
-                next_cost.append(len(paths[i]) - 1)
-                node2cs_cost.append(len(charger_paths[id]) - 1)
-
+        get_energy_cons(total_energy_cost, initial_energy, paths, charger_paths, mission)
+        exit()
         charger_mission = min_path
         # Create the final path
         # print(f"{charger_mission = }")
