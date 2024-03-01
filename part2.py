@@ -230,6 +230,9 @@ def get_energy_cons(total_e, init_e, paths, charger_paths, mission):
             node2end.append(node2end[i - 1] - next_cost)
             cap_cons.append(cap_cons[i - 1] - next_cost)
             detour_cost.append(node2cs + cs2next - next_cost)
+        
+        ooe = next(x[0] for x in enumerate(cap_cons) if x[1] <= 0)
+        print(cap_cons[ooe])
 
         print(f'{node2end = }')
         print(f'{start2node = }')
