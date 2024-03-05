@@ -8,6 +8,7 @@ from part1 import part1
 from part2 import part2
 from part3 import part3
 
+
 def check_for_match(match):
     if match:
         return int(match[0])

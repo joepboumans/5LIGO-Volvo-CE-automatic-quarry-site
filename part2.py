@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from matplotlib import colors
 from matplotlib import animation
 from dfs import DFS
+from tabulation import Tabulation
 
 GRID_SIZE = 12
 WALL = -1
@@ -209,19 +210,22 @@ def find_path(start_pos, end_pos, path, pred):
     return path
 
 
-def get_energy_cons(total_e, init_e, paths, charger_paths, mission):
+def get_energy_cons(total_e, init_e, paths, charger_paths, mission, max_energy):
         node2end = [total_e]
         start2node = [0]
         cap_cons = [init_e]
         detour_cost = []
-        node2cs = []
+        nodes2cs = []
+        cs2nodes = []
         
         for i,id in enumerate(mission):
             id = id[:2]
 
             next_cost = (len(paths[i - 1])) * ENERGY_COST
             node2cs = len(charger_paths[id]) * ENERGY_COST
+            nodes2cs.append(node2cs)
             cs2next = len(charger_paths[mission[i - 1][:2]]) * ENERGY_COST
+            cs2nodes.append(cs2next)
             if id == 'IH':
                 detour_cost.append(node2cs + cs2next - next_cost)
                 continue
@@ -230,14 +234,32 @@ def get_energy_cons(total_e, init_e, paths, charger_paths, mission):
             node2end.append(node2end[i - 1] - next_cost)
             cap_cons.append(cap_cons[i - 1] - next_cost)
             detour_cost.append(node2cs + cs2next - next_cost)
+
+        print(f'{start2node = }')
+        print(f'{node2end = }')
+        print(f'{cap_cons = }')
+        print(f'{nodes2cs = }')
+        print(f'{cs2nodes = }')
+        print(f'{detour_cost = }')
         
         ooe = next(x[0] for x in enumerate(cap_cons) if x[1] <= 0)
-        print(cap_cons[ooe])
+        print(f'{ooe = }')
+        min_score = float('inf')
+        for i in range(ooe - 1, 0, -1):
+            if cap_cons[i] < nodes2cs[i]:
+                print(f"Cannot reach CS {cap_cons[i] = } {nodes2cs[i] = }")
+                continue
+            cap = max_energy - cs2nodes[i]
+            print(f'{cap = }')
+            if cap >= node2end[i + 1]:
+                print(f'End in reach {node2end[i + 1]}')
+                score = detour_cost[i]
+                if score < min_score:
+                    min_score = score
+                    print(f'{min_score = }')
 
-        print(f'{node2end = }')
-        print(f'{start2node = }')
-        print(f'{cap_cons = }')
-        print(f'{detour_cost = }')
+
+
 
 def part2(config, mission):
     # Read configuration files
@@ -356,7 +378,10 @@ def part2(config, mission):
         # print(f'counted {mission = }')
         # ----------------------------------------
         # Create tables for energy caclulation
-        get_energy_cons(total_energy_cost, initial_energy, paths, charger_paths, mission)
+        table = Tabulation(total_energy_cost, initial_energy, paths, charger_paths, mission, max_energy)
+        table.run()
+        table.get_score()
+        # get_energy_cons(total_energy_cost, initial_energy, paths, charger_paths, mission, max_energy)
         exit()
         charger_mission = min_path
         # Create the final path
