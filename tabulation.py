@@ -58,7 +58,7 @@ class Tabulation():
         cap_cons = [init_cap]
         reached_end = True
         for i in range(1, len(self.mission) - idx):
-            next_cost = cap_cons[i] - self.node2next[i]
+            next_cost = cap_cons[i - 1] - self.node2next[i]
             cap_cons.append(next_cost)
             if next_cost <= 0:
                 reached_end = False
